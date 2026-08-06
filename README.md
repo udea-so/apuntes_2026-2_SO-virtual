@@ -1,0 +1,1 @@
+# apuntes_2026-2_SO-virtual
