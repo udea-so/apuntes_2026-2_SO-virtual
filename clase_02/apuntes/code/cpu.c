@@ -31,7 +31,7 @@ int main(int argc, char *argv[])
 
     while (1) {
       printf("%s\n", str);
-      wait(5);
+      wait(1);
     }
     return 0;
 }
