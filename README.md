@@ -16,7 +16,7 @@ En la siguiente tabla se encuentran los apuntes a mano de cada sesión del modul
 |1	 | 1 | 04/08/2026 | Clase 1 - Presentación del curso | --- | --- |
 |	 | 2 | 06/08/2026 | Clase 2 - Introducción a los sistemas operativos | [[pdf]](clase_02/SO_apuntes_clase2_annotated.pdf) [[apuntes]](clase_02/apuntes/) | Definición y caracteristicas de un sistema operativo|
 |2	 | 3 | 11/08/2026 | Clase 3 - Procesos | Apuntes clase 3 [[pdf]](clase_03/SO_apuntes_clase3_annotated.pdf) [[apuntes]](clase_03/apuntes/) [[simulacion]](clase_03/simulacion/) | Diferencia entre programas y procesos, Abstracción de un proceso, estructuras de datos relacionadas (lista de procesos, PCB, etc.)  |
-|    | 4 | 13/08/2026 | Clase 4 - Ejecución Directa Limitada (LDE) | Apuntes clase 4 [[pdf]](clase_04/SO_apuntes_clase4_annotated.pdf) [[apuntes]](clase_04/apuntes/) | --- |
-|3   | 5 | 18/06/2026 | Clase 5 - Politicas de planificación | --- | --- |
-|    | 6 | 10/03/2026 | Clase 6 - MLFQ (Multi-Level Feedback Queue)| --- | --- |
+|    | 4 | 13/08/2026 | Clase 4 - Ejecución Directa Limitada (LDE) - Parte 1 | Apuntes clase 4 [[pdf]](clase_04/SO_apuntes_clase4_annotated.pdf) [[apuntes]](clase_04/apuntes/) | Se explico el concepto de ejecucion directa, luego se continuo con el nuevo concepto de ejecucion directa limitada y como se implementa (modos kernel/usuario, bit de modo), finalmente se hablo del cambio entre modos mediantes llamadas de sistema |
+|3   | 5 | 18/06/2026 | Clase 5 - Ejecución Directa Limitada (LDE) - Parte 2| Apuntes clase 4 [[pdf]](clase_04/SO_apuntes_clase4_annotated.pdf) [[apuntes]](clase_04/apuntes/) | Se continuo con el cambio entre modos mediante interrupciones, se hablo de los modos cooperativo y no cooperativo, se hablo del concepto de timer y se condenso todo en el protocolo de ejecución directa limitada completo |
+|    | 6 | 10/03/2026 | Clase 6 - Politicas de planificación | --- | --- |
 
