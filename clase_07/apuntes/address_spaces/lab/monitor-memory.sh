@@ -1,0 +1,1 @@
+/usr/bin/time -f "Memory Used: %M kilobytes" ./use-memory
