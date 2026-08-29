@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Qué es este repositorio
 
-Apuntes de clase para el curso de **Sistemas Operativos (Ude@)**, semestre 2026-2. No es un proyecto de software: es una colección de notas de clase, diapositivas y pequeños programas de ejemplo/laboratorio en C y Python usados para ilustrar conceptos del curso (basados en el libro *Operating Systems: Three Easy Pieces* / OSTEP). El `README.md` de la raíz es la tabla de contenidos del curso: enlaza cada clase con su PDF anotado y su carpeta de `apuntes`.
+Apuntes de clase para el curso de **Sistemas Operativos (Ude@)**, semestre 2026-2. No es un proyecto de software: es una colección de notas de clase, diapositivas y pequeños programas de ejemplo/laboratorio en C y Python usados para ilustrar conceptos del curso (basados en el libro *Operating Systems: Three Easy Pieces* / OSTEP). El `README.md` de la raíz es la tabla de contenidos del curso: enlaza cada clase con su PDF anotado, su carpeta de `apuntes` y, cuando existe, su `apuntes_zoom`.
 
 ## Estructura
 
@@ -12,10 +12,10 @@ Cada `clase_NN/` corresponde a una sesión de clase y sigue (aproximadamente) es
 
 - `SO_apuntes_claseNN.pptx` / `.pdf` / `.xopp` / `_annotated.pdf`: diapositivas y anotaciones manuscritas (Xournal++) de la clase. Archivos binarios, no se editan con Claude.
 - `apuntes/`: notas de clase en Markdown, con sus imágenes/GIFs de apoyo y, cuando aplica, el código o simulador asociado a esa clase. Es material teórico curado manualmente por el profesor.
-- `apuntes_zoom/` (a partir de la clase en que se adopte): carpeta hermana de `apuntes/`, dedicada exclusivamente al resumen de la sesión generado combinando el manuscrito anotado con el resumen de Zoom de la clase. Se genera siguiendo `prompt_maestro_apuntes_clase_so_v1.1.md` (raíz del repo) — ver esa guía para la plantilla, reglas de fidelidad a la fuente y convención de usar diagramas Mermaid donde ayuden a la pedagogía. No duplica código ni simuladores: solo referencia los ya existentes en `apuntes/` o en la carpeta hermana correspondiente.
+- `apuntes_zoom/`: carpeta hermana de `apuntes/`, dedicada exclusivamente al resumen de la sesión generado combinando el manuscrito anotado con el/los resumen(es) de Zoom de la clase. Se genera siguiendo `prompt_maestro_apuntes_clase_so_v1.1.md` (raíz del repo) — ver esa guía para la plantilla, reglas de fidelidad a la fuente y convención de usar diagramas Mermaid donde ayuden a la pedagogía. No duplica código ni simuladores: solo referencia los ya existentes en `apuntes/` o en la carpeta hermana correspondiente. Existe (retroactivamente, un único `README.md` por carpeta) para `clase_02` a `clase_06`; algunas clases se dictaron en más de un día calendario y el propio `apuntes_zoom/README.md` señala con una nota el corte de sesión (p. ej. `clase_04` combina las sesiones del 13/08 y 18/08).
 - En algunas clases el código/simulador vive además en una carpeta hermana (`simulacion/`, `simulador/`), fuera de `apuntes/`.
 
-Dentro de `clase_07/apuntes/` hay varios subtemas (`address_spaces/`, `address_translation_base-bound/`), cada uno con su propio `README.md` y, cuando corresponde, una carpeta `lab/` con el enunciado del laboratorio y su código fuente. `apuntes_zoom/` sigue el mismo patrón de subtemas cuando aplique (`apuntes_zoom/<subtema>/README.md`).
+Dentro de `clase_07/apuntes/` hay varios subtemas (`address_spaces/`, `address_translation_base-bound/`), cada uno con su propio `README.md` y, cuando corresponde, una carpeta `lab/` con el enunciado del laboratorio y su código fuente. `apuntes_zoom/` sigue el mismo patrón de subtemas cuando aplique (`apuntes_zoom/<subtema>/README.md`); en las clases 2 a 6 (sin subtemas) es un único `README.md` directamente bajo `apuntes_zoom/`.
 
 ## Código de ejemplo y simuladores por clase
 
