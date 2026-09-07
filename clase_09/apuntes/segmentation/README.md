@@ -1,49 +1,49 @@
-# Segmentation
+# Segmentación
 
-## Overview
+## Resumen
 
-Let’s explore how to support a larger address space.
+Exploremos cómo soportar un espacio de direcciones más grande.
 
-This section should help us answer the following question:
-* **How can we support a large address space that could possibly have a lot of free space between the stack and the heap?**
-  
-## Introduction
+Esta sección debería ayudarnos a responder la siguiente pregunta:
+* **¿Cómo podemos soportar un espacio de direcciones grande que posiblemente tenga mucho espacio libre entre el stack y el heap?**
 
-### So far, we’ve stored each process’s complete address space in memory.
+## Introducción
 
-The OS can simply move processes around in physical memory using the **base and bounds registers**.
+### Hasta ahora, hemos almacenado el espacio de direcciones completo de cada proceso en memoria.
+
+El SO puede simplemente mover los procesos dentro de la memoria física utilizando los **registros de base y límite (base and bounds)**.
 
 <p align="center">
   <img src="img/segmentation1.gif" alt="Segmentation 1">
 </p>
 
 
-In the above graphic, you'll notice that there is a large *"free"* area between the stack and the heap. However, even though the space is "free", it's still taking up physical memory when we move the whole address space to another spot in physical memory.
+En el gráfico anterior, notarás que hay una gran área *"libre"* entre el stack y el heap. Sin embargo, aunque el espacio esté "libre", sigue ocupando memoria física cuando movemos todo el espacio de direcciones a otro lugar de la memoria física.
 
-In this case, using a base and bounds register for memory virtualization is wasteful. This also makes it difficult to run a program when the whole address space doesn't fit into memory.
+En este caso, usar un registro de base y límite para la virtualización de memoria resulta ineficiente. Esto también dificulta ejecutar un programa cuando el espacio de direcciones completo no cabe en memoria.
 
-Let's further explore how to support a larger address space.
+Sigamos explorando cómo soportar un espacio de direcciones más grande.
 
-## Segmentation: Generalized Base/Bounds
+## Segmentación: Base y Límite Generalizados
 
-**Segmentation** was created to counteract **internal fragmentation** which occurs when a process gets allocated to a memory block that has more memory than necessary. This results in wasted memory, as seen in a previous example. In segmentation, memory is divided into **varied** segment sizes. A **segment** is an uninterrupted piece of the address space of a particular length. Each of these segments has its own base and bounds pair rather than the entire memory management unit having just one pair.
+La **segmentación (segmentation)** se creó para contrarrestar la **fragmentación interna (internal fragmentation)**, que ocurre cuando a un proceso se le asigna un bloque de memoria más grande de lo necesario. Esto genera memoria desperdiciada, como vimos en el ejemplo anterior. En la segmentación, la memoria se divide en tamaños de segmento variados. Un **segmento (segment)** es un fragmento ininterrumpido del espacio de direcciones con una longitud particular. Cada uno de estos segmentos tiene su propio par de base y límite, en lugar de que toda la unidad de gestión de memoria tenga un único par.
 
-There are three different segment types that can occupy the address space:
-* Code
+Existen tres tipos diferentes de segmentos que pueden ocupar el espacio de direcciones:
+* Código (Code)
 * Stack
 * Heap
 
-**Segmentation** lets the OS put each one of those segments into different parts of physical memory and avoid filling the physical memory with unused virtual address space.
+La **segmentación** le permite al SO colocar cada uno de esos segmentos en diferentes partes de la memoria física, evitando llenar la memoria física con espacio de direcciones virtual sin usar.
 
-Let’s say we want to put the address space from our previous graphic into physical memory. If we have a base and bounds pair for every segment, we can put each one independently into physical memory.
+Supongamos que queremos ubicar el espacio de direcciones de nuestro gráfico anterior en la memoria física. Si tenemos un par de base y límite para cada segmento, podemos ubicar cada uno de forma independiente en la memoria física.
 
-In the graphic to the left, we see a `64KB`  physical memory with our three segments in it. Huge address spaces with large amounts of **sparse address space** can be accommodated because only used memory is allocated space in physical memory.
+En el gráfico de la izquierda, vemos una memoria física de `64KB` con nuestros tres segmentos ubicados en ella. Se pueden acomodar espacios de direcciones enormes con grandes cantidades de **espacio de direcciones disperso (sparse address space)**, porque solo se asigna espacio en memoria física a la memoria que realmente se usa.
 
-Our MMU’s hardware structure needs a set of three base and bounds register pairs to handle segmentation. The table below shows the register values for this example. Each bounds register holds the size of a segment.
+La estructura de hardware de nuestra MMU necesita un conjunto de tres pares de registros de base y límite para manejar la segmentación. La siguiente tabla muestra los valores de los registros para este ejemplo. Cada registro límite almacena el tamaño de un segmento.
 
-| Segment | Base | Size |
+| Segmento | Base | Tamaño |
 |---|---|---|
-|Code|`32KB`|`2KB`|
+|Código|`32KB`|`2KB`|
 |Heap|`34KB`|`3KB`|
 |Stack|`28KB`|`2KB`|
 
@@ -51,64 +51,62 @@ Our MMU’s hardware structure needs a set of three base and bounds register pai
   <img src="img/segmentation2.gif" alt="Segmentation 2">
 </p>
 
-* The code segment is placed at physical address `32KB` and has a size of `2KB`
-* The heap segment is placed at `34KB` and has a size of `3KB`
-* The stack segment is placed at `28KB` and has a size of `2KB`
+* El segmento de código se ubica en la dirección física `32KB` y tiene un tamaño de `2KB`
+* El segmento de heap se ubica en `34KB` y tiene un tamaño de `3KB`
+* El segmento de stack se ubica en `28KB` y tiene un tamaño de `2KB`
 
-The size segment is identical to the bounds register we mentioned previously. It tells the hardware of the number of valid bytes in the segment. This allows the hardware to detect when a software has accessed data outside of these bounds without permission.
+El tamaño del segmento es equivalente al registro límite que mencionamos anteriormente. Le indica al hardware el número de bytes válidos en el segmento. Esto le permite al hardware detectar cuando un software ha accedido a datos fuera de estos límites sin permiso.
 
-### Question
+### Pregunta
 
-Fill in the blank to complete the statement below.
+Completa el espacio en blanco para terminar el siguiente enunciado.
 
-Click the button below to submit.
+Haz clic en el botón de abajo para enviar tu respuesta.
 
-In a system using **`segmentation`**, programs are represented as a collection of **`segments`** stored in a 
-**`contiguous`** memory block.
+En un sistema que usa **`segmentación`**, los programas se representan como una colección de **`segmentos`** almacenados en un bloque de memoria **`contiguo`**.
 
-> **Solution**
-> 
-> In a system using **`segmentation`**, programs are represented as a collection of **`segments`** stored in a 
-**`contiguous`** memory block.
+> **Solución**
+>
+> En un sistema que usa **`segmentación`**, los programas se representan como una colección de **`segmentos`** almacenados en un bloque de memoria **`contiguo`**.
 
-## Segmentation Fault
+## Falla de Segmentación (Segmentation Fault)
 
-Let’s translate the address space in the graphic to the left.
+Traduzcamos el espacio de direcciones del gráfico de la izquierda.
 
-Assume `100` is the virtual address (which is inside the code segment). When the reference happens (like on an instruction fetch), the hardware will add the base value to the offset into this segment (`100`) to get the desired physical address:
+Supongamos que `100` es la dirección virtual (que está dentro del segmento de código). Cuando ocurre la referencia (como en un *instruction fetch*), el hardware suma el valor base al offset dentro de este segmento (`100`) para obtener la dirección física deseada:
 
 $$
 100 + 32KB = 32868
 $$
 
-The hardware will then check if the address is within bounds (is `100 < 2KB`), see that it is, and issue the reference to physical memory address `32868`.
+Luego, el hardware verifica si la dirección está dentro de los límites (¿es `100 < 2KB`?), confirma que sí lo está, y emite la referencia a la dirección de memoria física `32868`.
 
-What about a virtual address of `4200` in the heap? Adding the virtual address `4200` to the heap’s base (`34KB`) gives us a physical address of `39016`, which is incorrect.
+¿Qué pasa con una dirección virtual de `4200` en el heap? Sumar la dirección virtual `4200` a la base del heap (`34KB`) nos da una dirección física de `39016`, lo cual es incorrecto.
 
-The first step is to get the **offset** into the heap, which tells us which byte(s) in this segment the address belongs to. Since the heap begins at virtual address `4KB` (`4096`), the `4200` offset is really `4200 - 4096`, or `104`. **We then add this offset (`104`) to the physical address of the base register (`34KB`) to get the desired result: `34920`**.
+El primer paso es obtener el **offset** dentro del heap, que nos indica a qué byte(s) de este segmento pertenece la dirección. Como el heap comienza en la dirección virtual `4KB` (`4096`), el offset `4200` en realidad es `4200 - 4096`, es decir, `104`. **Luego sumamos este offset (`104`) a la dirección física del registro base (`34KB`) para obtener el resultado deseado: `34920`**.
 
-**What if we tried to refer to an illegal address past the end of the heap(i.e., a virtual address of `7KB` or more)?**
+**¿Qué pasaría si intentáramos referirnos a una dirección ilegal más allá del final del heap (es decir, una dirección virtual de `7KB` o más)?**
 
-You can probably guess what happens next. The hardware determines that the address is out of bounds and will likely terminate the process. This results in what is commonly known as **segmentation fault**.
+Probablemente puedas adivinar qué pasa después. El hardware determina que la dirección está fuera de los límites y, muy probablemente, termine el proceso. Esto es lo que se conoce comúnmente como **falla de segmentación (segmentation fault)**.
 
-### Question
+### Pregunta
 
-Which of the following occurs when we refer to an address space that lies beyond the end of the heap?
+¿Cuál de las siguientes opciones ocurre cuando hacemos referencia a un espacio de direcciones que está más allá del final del heap?
 
-Select an answer and click the button below to submit.
-- [x] Segmentation Fault
-- [ ] Address Translation
-- [ ] Paging
-- [ ] Non-Contiguous Segmentation
+Selecciona una respuesta y haz clic en el botón de abajo para enviarla.
+- [x] Falla de Segmentación
+- [ ] Traducción de Direcciones
+- [ ] Paginación
+- [ ] Segmentación No Contigua
 
-> **Solution**
-> 
-> When an address space lies beyond the end of the heap, the hardware determines that the address is out of bounds and will likely terminate the process. This is called **`Segmentation Fault`**.
+> **Solución**
+>
+> Cuando un espacio de direcciones está más allá del final del heap, el hardware determina que la dirección está fuera de los límites y probablemente termine el proceso. Esto se llama **`Falla de Segmentación`**.
 
 
-## Which Segment Do We Mean?
+## ¿A Qué Segmento Nos Referimos?
 
-During translation, the hardware makes use of **segment registers**. How does it determine the offset into a segment, as well as which segment an address relates to? One common approach, known as an **explicit approach**, is to divide the address space into segments based on the first few bits of the virtual address.
+Durante la traducción, el hardware hace uso de los **registros de segmento (segment registers)**. ¿Cómo determina el offset dentro de un segmento, así como a qué segmento pertenece una dirección? Un enfoque común, conocido como **enfoque explícito (explicit approach)**, consiste en dividir el espacio de direcciones en segmentos con base en los primeros bits de la dirección virtual.
 
 ```c
 // get top 2 bits of 14-bit VA
@@ -122,160 +120,160 @@ else
     Register = AccessMemory(PhysAddr)
 ```
 
-In our previous example, we have three segments, so we only need two bits to complete our assignment. If we pick the segment using the first two bits of our 14-bit virtual address, our virtual address will look like this:
+En nuestro ejemplo anterior, tenemos tres segmentos, así que solo necesitamos dos bits para completar la asignación. Si elegimos el segmento usando los primeros dos bits de nuestra dirección virtual de 14 bits, esta se vería así:
 
 <p align="center">
   <img src="img/dir1.webp" alt="Dir 1">
 </p>
 
 
-If the top two bits are `00`, the hardware understands the virtual address is in the **code** segment and uses the code base and bounds pair to relocate it. If the top two bits are `01`, the hardware uses the **heap** base and bounds.
+Si los dos bits superiores son `00`, el hardware entiende que la dirección virtual está en el segmento de **código**, y usa el par de base y límite del código para reubicarla. Si los dos bits superiores son `01`, el hardware usa la base y límite del **heap**.
 
-To clarify, let’s translate our previous heap virtual address (`4200`). Here is the virtual address `4200` in binary form:
+Para aclarar esto, traduzcamos nuestra dirección virtual del heap anterior (`4200`). Así se ve la dirección virtual `4200` en forma binaria:
 
 <p align="center">
   <img src="img/dir2.webp" alt="Dir 2">
 </p>
 
-So, the first two bits (`01`) indicate the hardware which section we’re talking about. The last `12` bits indicate the segment offset: `000001101000`, hex `0x86`, decimal `104`.
+Entonces, los primeros dos bits (`01`) le indican al hardware de qué sección estamos hablando. Los últimos `12` bits indican el offset del segmento: `000001101000`, hexadecimal `0x86`, decimal `104`.
 
-So the hardware uses the first two bits to select the **segment register**, and the next `12` bits to **offset into the segment**. The final physical address is obtained by adding the base register to the offset.
+Entonces el hardware usa los primeros dos bits para seleccionar el **registro de segmento**, y los siguientes `12` bits como el offset dentro del segmento. La dirección física final se obtiene sumando el registro base al offset.
 
-The offset also simplifies the bounds check. If the offset is not less than the bounds, the address is illegal.
+El offset también simplifica la verificación de límites. Si el offset no es menor que el límite, la dirección es ilegal.
 
-### Questions
+### Preguntas
 
-Fill in the blank to complete the statement below.
+Completa el espacio en blanco para terminar el siguiente enunciado.
 
-Click the button below to submit.
+Haz clic en el botón de abajo para enviar tu respuesta.
 
-The **`offset`**  is added to a segment’s base register to create the complete physical address.
+El **`offset`** se suma al registro base de un segmento para crear la dirección física completa.
 
 
-> **Solution**:
-> 
-> The **`offset`** is added to a segment’s base register to create the complete *physical address*.
+> **Solución**:
+>
+> El **`offset`** se suma al registro base de un segmento para crear la *dirección física* completa.
 
-## Example
+## Ejemplo
 
-To get the desired physical address, the hardware would do something like the code segment to the left if the base and bounds were arrays (with one entry per segment).
+Para obtener la dirección física deseada, el hardware haría algo similar al fragmento de código de la izquierda, si la base y el límite fueran arreglos (con una entrada por segmento).
 
-In our continuous example, we can fill in the values for the constants in the code segment to the left.
-* `SEG_MASK` would be set to `0x300`
-* `SEG_SHIFT` is set to `12`
-* `OFFSET_MASK` is set to `0xFFF`
+En nuestro ejemplo continuo, podemos completar los valores de las constantes en el fragmento de código de la izquierda.
+* `SEG_MASK` sería `0x300`
+* `SEG_SHIFT` es `12`
+* `OFFSET_MASK` es `0xFFF`
 
-You may have noticed that when we use the top two bits and there are just three segments (code, heap, and stack), **one segment of the address space is left unused**. Some systems put code in the same segment as the heap to fully use the virtual address space (and avoid an unused segment) and use only one bit to decide which segment to use.
+Es posible que hayas notado que, al usar los dos bits superiores y tener solo tres segmentos (código, heap y stack), **un segmento del espacio de direcciones queda sin usar**. Algunos sistemas colocan el código en el mismo segmento que el heap para aprovechar completamente el espacio de direcciones virtual (y evitar un segmento sin usar), utilizando solo un bit para decidir qué segmento usar.
 
-**Using so many bits to pick a segment also limits the use of virtual address space**. Each segment is limited to a maximum size. In our example, `4KB` (using the top two bits to choose segments implies the `16KB` address space gets chopped into four pieces, or `4KB` in this example). A program that wants to expand a segment (like the heap or the stack) beyond that limit is out of luck.
+**Usar tantos bits para elegir un segmento también limita el uso del espacio de direcciones virtual**. Cada segmento está limitado a un tamaño máximo. En nuestro ejemplo, `4KB` (usar los dos bits superiores para elegir el segmento implica que el espacio de direcciones de `16KB` se divide en cuatro partes, es decir, `4KB` en este caso). Un programa que quiera expandir un segmento (como el heap o el stack) más allá de ese límite, simplemente no podrá hacerlo.
 
-The hardware can also determine the segment an address belongs to. The implicit approach determines the segment by examining the address. If the address came from the program counter (i.e., an instruction fetch), it’s in the **code** segment. If it came from the stack or base pointer, it’s in the **stack** segment. All others are in the **heap**.
+El hardware también puede determinar a qué segmento pertenece una dirección. El **enfoque implícito (implicit approach)** determina el segmento examinando la dirección. Si la dirección proviene del *program counter* (es decir, un *instruction fetch*), está en el segmento de **código**. Si proviene del stack o del *base pointer*, está en el segmento de **stack**. Todas las demás direcciones están en el **heap**.
 
-### Questions
+### Preguntas
 
-Select **all** of the valid types of segments below.
+Selecciona **todos** los tipos de segmento válidos a continuación.
 - [x] heap
-- [x] code
+- [x] código
 - [ ] array
-- [ ] counter
+- [ ] contador
 - [x] stack
 - [ ] base
-- [ ] bound
+- [ ] límite
 
-> **Solution**:
+> **Solución**:
 >
-> There are three valid segments types: `code`, `stack`, and `heap`.
+> Existen tres tipos de segmento válidos: `código`, `stack` y `heap`.
 
-## What About the Stack?
+## ¿Qué Pasa con el Stack?
 
 <p align="center">
   <img src="img/segmentation3.gif" alt="segmentation 3">
 </p>
 
 
-Next, let’s talk about the **stack**. If we revisit our previous graphic, the stack has been shifted to physical address `28KB`, but with one major difference: it now grows backwards (towards lower addresses). It “starts” at `28 KB` and expands back to `26 KB` in physical memory, corresponding to virtual addresses `16 KB` to `14 KB`. Translation has to proceed in a different way.
+A continuación, hablemos del **stack**. Si retomamos nuestro gráfico anterior, el stack se desplazó a la dirección física `28KB`, pero con una diferencia importante: ahora crece hacia atrás (hacia direcciones más bajas). "Empieza" en `28 KB` y se expande hacia atrás hasta `26 KB` en memoria física, lo cual corresponde a las direcciones virtuales de `16 KB` a `14 KB`. La traducción debe hacerse de una manera diferente.
 
 
-The first thing we need is some more hardware support. In addition to the base and boundary numbers, the hardware also has to know which way the segment will grow (a bit, for example, that is set to `1` when the segment grows in the positive direction, and `0` for negative). The table below shows our modified view of the hardware tracks:
+Lo primero que necesitamos es un poco más de soporte de hardware. Además de los valores de base y límite, el hardware también debe saber en qué dirección crecerá el segmento (por ejemplo, un bit que se establece en `1` cuando el segmento crece en dirección positiva, y en `0` para la dirección negativa). La siguiente tabla muestra nuestra vista modificada de los registros de hardware:
 
-| Segment | Base | Size (max `4K`) | Grows positive? |
+| Segmento | Base | Tamaño (máx. `4K`) | ¿Crece positivo? |
 |---|---|---|---|
 |`Code_00`|`32KB`|`2KB`|`1`|
 |`Heap_01`|`34KB`|`3KB`|`1`|
 |`Stack_11`|`28KB`|`2KB`|`0`|
 
-Because the hardware now recognizes that segments can grow in the opposite direction, it has to now translate virtual addresses in a different way. Let’s look at an example stack virtual address and translate it.
+Como el hardware ahora reconoce que los segmentos pueden crecer en dirección opuesta, debe traducir las direcciones virtuales de una manera diferente. Veamos un ejemplo de dirección virtual del stack y traduzcámosla.
 
-Say we want to access virtual address `15KB`, which should correspond to physical address `27KB` in this example. In binary representation, our virtual address looks like this:
+Supongamos que queremos acceder a la dirección virtual `15KB`, que en este ejemplo debería corresponder a la dirección física `27KB`. En representación binaria, nuestra dirección virtual se ve así:
 
 ```
 11 1100 0000 0000 (hex 0x3C00)
 ```
 
-The first two bits (`11`) are used by the hardware to designate the segment, but we are left with a `3KB` offset. To get the right negative offset, subtract the maximum segment size from `3KB`. A segment can be `4KB` in this case, so the correct negative offset is:
+Los primeros dos bits (`11`) son usados por el hardware para designar el segmento, y nos queda un offset de `3KB`. Para obtener el offset negativo correcto, restamos el tamaño máximo del segmento a `3KB`. En este caso, un segmento puede ser de `4KB`, así que el offset negativo correcto es:
 
 $$
 3KB - 4KB = -1KB
 $$
 
-To get the right physical address, we add the negative offset (`-1KB`) to the base (`28KB`). The bounds check is done by confirming that the negative offset’s absolute value is less than or equal to the segment’s current size (in this case, `2 KB`).
+Para obtener la dirección física correcta, sumamos el offset negativo (`-1KB`) a la base (`28KB`). La verificación de límites se hace confirmando que el valor absoluto del offset negativo sea menor o igual al tamaño actual del segmento (en este caso, `2 KB`).
 
-### Questions
+### Preguntas
 
-By adding the negative offset to the base, we are able to calculate what?
-- [ ] base and boundary number
-- [x] physical address
-- [ ] positive or negative growth
-- [ ] segment size
+Al sumar el offset negativo a la base, ¿qué podemos calcular?
+- [ ] valor de base y límite
+- [x] dirección física
+- [ ] crecimiento positivo o negativo
+- [ ] tamaño del segmento
 
-> **Answer**
-> 
-> To get the right **`physical address`**, we add the negative offset to the base.
+> **Respuesta**
+>
+> Para obtener la **`dirección física`** correcta, sumamos el offset negativo a la base.
 
-## OS Support
+## Soporte del SO
 
-You should now understand the basics of **segmentation**. As the system operates, pieces of the address space are relocated into physical memory, saving a lot of space compared to using a single base/bounds pair for the whole address space. Specifically, the empty space between the stack and the heap does not need to be allocated in physical memory, allowing us to support larger virtual address spaces per process.
+Ya deberías entender los fundamentos de la **segmentación**. Mientras el sistema opera, los fragmentos del espacio de direcciones se reubican en la memoria física, ahorrando mucho espacio en comparación con usar un único par de base/límite para todo el espacio de direcciones. En concreto, el espacio vacío entre el stack y el heap no necesita asignarse en memoria física, lo que nos permite soportar espacios de direcciones virtuales más grandes por proceso.
 
-But segmentation presents new challenges for the OS.
-1. **What should the OS do on a context switch?** The segment registers must be saved and restored. Each process has its own virtual address space, which the OS must correctly set up before continuing execution.
-2. **When segments grow, the OS interacts (or perhaps shrink)**. To allocate an object, a program can use `malloc()`. In some cases, the current heap can satisfy the request, and `malloc()` will find free space for the object and return a pointer to the caller. In others, the heap segment may need to increase.
-   * In this case, the memory-allocation library will use a system call to expand the heap (e.g., `sbrk()`). As a result, the OS normally provides more space, updating the segment size register to the new (larger) size, and informing the library of success. The OS may deny the request if no more physical memory is available or if the calling process has too much.
-3. Finally, and maybe most importantly, **managing physical memory free space**. The OS must be able to find physical memory space for new address spaces. Before, we assumed that each address space had the same size, and physical memory could therefore be described as a series of slots for processes. Now we have multiple segments per process, each with a different size.
+Pero la segmentación presenta nuevos retos para el SO.
+1. **¿Qué debe hacer el SO en un cambio de contexto (context switch)?** Los registros de segmento deben guardarse y restaurarse. Cada proceso tiene su propio espacio de direcciones virtual, que el SO debe configurar correctamente antes de continuar la ejecución.
+2. **El SO interviene cuando los segmentos crecen (o tal vez se reducen)**. Para asignar un objeto, un programa puede usar `malloc()`. En algunos casos, el heap actual puede satisfacer la solicitud, y `malloc()` encontrará espacio libre para el objeto y devolverá un puntero al llamador. En otros casos, el segmento del heap deberá aumentar de tamaño.
+   * En este caso, la biblioteca de asignación de memoria usará una llamada al sistema para expandir el heap (por ejemplo, `sbrk()`). Como resultado, el SO normalmente entrega más espacio, actualiza el registro de tamaño del segmento al nuevo valor (más grande) e informa a la biblioteca del éxito de la operación. El SO puede negar la solicitud si ya no hay más memoria física disponible o si el proceso que la solicita ya tiene demasiada.
+3. Finalmente, y quizás lo más importante, **la gestión del espacio libre de la memoria física**. El SO debe ser capaz de encontrar espacio en memoria física para los nuevos espacios de direcciones. Antes asumíamos que cada espacio de direcciones tenía el mismo tamaño, por lo que la memoria física podía describirse como una serie de slots para procesos. Ahora tenemos múltiples segmentos por proceso, cada uno de un tamaño distinto.
 
-The main issue is that **physical memory soon fills up with pockets of free space**, making it impossible to assign new segments or expand old ones. We call this **external fragmentation**. We can see an example of this in the next figure.
+El problema principal es que **la memoria física pronto se llena de bolsillos de espacio libre**, haciendo imposible asignar nuevos segmentos o expandir los existentes. A esto le llamamos **fragmentación externa (external fragmentation)**. Podemos ver un ejemplo de esto en la siguiente figura.
 
 <p align="center">
   <img src="img/segmentation5.png" alt="segmentation 5">
 </p>
 
-In this case, a process requests a `20 KB` section. In this case, there is `24 KB` free, but not in one piece (rather, in three non-contiguous chunks). So the OS can’t handle the `20 KB`. If the next so many bytes of physical space are not accessible, **the OS must deny the request**, even if there are free bytes elsewhere in physical memory.
+En este caso, un proceso solicita una sección de `20 KB`. Aunque hay `24 KB` libres, no están en un solo bloque (sino en tres fragmentos no contiguos). Por lo tanto, el SO no puede satisfacer la solicitud de `20 KB`. Si los siguientes tantos bytes de espacio físico no están disponibles de forma contigua, **el SO debe negar la solicitud**, incluso si hay bytes libres en otras partes de la memoria física.
 
-**Rearranging existing memory parts could help compact physical memory**. For example, the OS may stop all current processes, copy their data to one contiguous region of memory, and update their segment register values to point to the new physical addresses. So the OS lets the next allocation request succeed. However, copying segments is memory-intensive and takes up a lot of processor time. Compaction also makes requests to grow current segments difficult to meet.
+**Reorganizar las partes de memoria existentes podría ayudar a compactar la memoria física**. Por ejemplo, el SO podría detener todos los procesos actuales, copiar sus datos a una región contigua de memoria y actualizar los valores de sus registros de segmento para que apunten a las nuevas direcciones físicas. Así, el SO permite que la siguiente solicitud de asignación tenga éxito. Sin embargo, copiar segmentos consume muchos recursos de memoria y bastante tiempo de procesador. La compactación también dificulta satisfacer solicitudes para expandir los segmentos actuales.
 
-### Questions
+### Preguntas
 
-When physical memory is so full of empty space that assigning new segments or expanding old ones becomes impossible, which of the following happens?
+Cuando la memoria física está tan llena de espacio vacío que resulta imposible asignar nuevos segmentos o expandir los existentes, ¿cuál de las siguientes opciones ocurre?
 
-Select an answer and click the button below to submit.
-- [x] External Fragmentation
-- [ ] Segmentation Fault
-- [ ] Length Limit
-- [ ] Bounds Breach
+Selecciona una respuesta y haz clic en el botón de abajo para enviarla.
+- [x] Fragmentación Externa
+- [ ] Falla de Segmentación
+- [ ] Límite de Longitud
+- [ ] Violación de Límites
 
-> **Answer**:
+> **Respuesta**:
 >
-> When physical memory fills up with pockets of free space, this makes it impossible to assign new segments or expand old ones. We call this **`External Fragmentation`**.
+> Cuando la memoria física se llena de bolsillos de espacio libre, se vuelve imposible asignar nuevos segmentos o expandir los existentes. A esto le llamamos **`Fragmentación Externa`**.
 
-## Summary
+## Resumen
 
-# Segmentation solves many difficulties and improves memory virtualization.
-* It is also fast since the arithmetic segmentation is simple and hardware-friendly. Translation overheads are minor.
-* Beyond dynamic relocation, segmentation can help sparse address spaces by reducing the amount of memory wasted across logical address space segments.
-* However, as we discovered, allocating variable-sized segments in memory causes certain issues.
-* The first is external fragmentation. Because segments vary in size, free memory is divided into odd-sized chunks, making memory allocation challenging.
+La segmentación resuelve muchas dificultades y mejora la virtualización de memoria.
+* También es rápida, ya que la aritmética de la segmentación es simple y amigable con el hardware. La sobrecarga de traducción es mínima.
+* Más allá de la reubicación dinámica, la segmentación ayuda con los espacios de direcciones dispersos, reduciendo la cantidad de memoria desperdiciada a lo largo de los segmentos del espacio de direcciones lógico.
+* Sin embargo, como descubrimos, asignar segmentos de tamaño variable en memoria genera ciertos problemas.
+* El primero es la fragmentación externa. Como los segmentos varían de tamaño, la memoria libre queda dividida en fragmentos de tamaños irregulares, lo que dificulta la asignación de memoria.
 
-The problem is fundamental and hard to avoid using smart algorithms or periodically compact memory.
-* Second, and perhaps more importantly, segmentation still isn’t flexible enough to support our fully generalized, sparse address space.
-* If we have a huge but rarely used heap in one logical segment, we must access the entire heap in memory.
+Este es un problema fundamental, difícil de evitar incluso usando algoritmos inteligentes o compactando la memoria periódicamente.
+* Segundo, y quizás más importante, la segmentación todavía no es lo suficientemente flexible para soportar un espacio de direcciones disperso y completamente generalizado.
+* Si tenemos un heap enorme pero poco usado en un único segmento lógico, debemos mantener todo el heap accesible en memoria.
 
-The address space model we use does not exactly match how the underlying segmentation was designed to support it, so we need fresh solutions.
+El modelo de espacio de direcciones que usamos no coincide exactamente con la forma en que la segmentación subyacente fue diseñada para soportarlo, así que necesitamos nuevas soluciones.
