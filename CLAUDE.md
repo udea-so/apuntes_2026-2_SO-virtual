@@ -12,8 +12,9 @@ Cada `clase_NN/` corresponde a una sesión de clase y sigue (aproximadamente) es
 
 - `SO_apuntes_claseNN.pptx` / `.pdf` / `.xopp` / `_annotated.pdf`: diapositivas y anotaciones manuscritas (Xournal++) de la clase. Archivos binarios, no se editan con Claude.
 - `apuntes/`: notas de clase en Markdown, con sus imágenes/GIFs de apoyo y, cuando aplica, el código o simulador asociado a esa clase. Es material teórico curado manualmente por el profesor.
-- `apuntes_zoom/`: carpeta hermana de `apuntes/`, dedicada exclusivamente al resumen de la sesión generado combinando el manuscrito anotado con el/los resumen(es) de Zoom de la clase. Se genera siguiendo `prompt_maestro_apuntes_clase_so_v1.1.md` (raíz del repo) — ver esa guía para la plantilla, reglas de fidelidad a la fuente y convención de usar diagramas Mermaid donde ayuden a la pedagogía. No duplica código ni simuladores: solo referencia los ya existentes en `apuntes/` o en la carpeta hermana correspondiente. Existe (retroactivamente, un único `README.md` por carpeta) para `clase_02` a `clase_08`; algunas clases se dictaron en más de un día calendario y el propio `apuntes_zoom/README.md` señala con una nota el corte de sesión (p. ej. `clase_04` combina las sesiones del 13/08 y 18/08). Aún no existe para `clase_09`.
+- `apuntes_zoom/`: carpeta hermana de `apuntes/`, dedicada exclusivamente al resumen de la sesión generado combinando el manuscrito anotado con el/los resumen(es) de Zoom de la clase. Se genera siguiendo `prompt_maestro_apuntes_clase_so_v1.1.md` (raíz del repo) — ver esa guía para la plantilla, reglas de fidelidad a la fuente y convención de usar diagramas Mermaid donde ayuden a la pedagogía. No duplica código ni simuladores: solo referencia los ya existentes en `apuntes/` o en la carpeta hermana correspondiente. Existe (retroactivamente, un único `README.md` por carpeta) para `clase_02` a `clase_08`; algunas clases se dictaron en más de un día calendario y el propio `apuntes_zoom/README.md` señala con una nota el corte de sesión (p. ej. `clase_04` combina las sesiones del 13/08 y 18/08). Aún no existe para `clase_09`, `clase_10` ni `clase_11`.
 - En algunas clases el código/simulador vive además en una carpeta hermana (`simulacion/`, `simulador/`), fuera de `apuntes/`.
+- No todas las clases tienen `apuntes/`: `clase_10` (paginación) y `clase_11` (TLB) por ahora solo tienen diapositivas (y, en `clase_10`, el manuscrito anotado) más su carpeta de simulador/simulación. `clase_11` aún no tiene `.xopp` ni `_annotated.pdf`.
 
 Dentro de `clase_07/apuntes/` (`address_spaces/`), `clase_08/apuntes/` (`address_translation_base-bound/`) y `clase_09/apuntes/` (`segmentation/`) hay subtemas, cada uno con su propio `README.md`, su `img/` y, cuando corresponde, una carpeta `lab/` o `src/` con el enunciado del laboratorio y su código fuente. Aunque `clase_07` y `clase_08` tienen subtemas, su `apuntes_zoom/README.md` sigue siendo único y directo bajo `apuntes_zoom/` (no dividido por subtema); el patrón `apuntes_zoom/<subtema>/README.md` descrito para clases con subtemas aún no se ha usado en la práctica.
 
@@ -59,7 +60,26 @@ Dentro de `clase_07/apuntes/` (`address_spaces/`), `clase_08/apuntes/` (`address
   python3 segmentation.py -a 128 -p 512 -b 0 -l 20 -B 512 -L 20
   ```
 
-No hay build system, linter ni suite de pruebas a nivel de repositorio: cada script/Makefile es independiente y se ejecuta/compila desde su propia carpeta como se indica arriba. Los programas en C se compilan con `gcc` (con `-Wall`, y `-pthread` cuando usan hilos); los scripts en Python (Python 3) no tienen dependencias externas — se ejecutan directo con `python3`.
+- **`clase_10/simulador/paging-linear-translate.py`** — Simulador de traducción con tablas de página lineales (homework `vm-paging` de OSTEP); su `README.md` trae las preguntas de la tarea, que usan las banderas `-P`, `-a`, `-p`, `-v`, `-u`, `-n`, `-s`, `-c`:
+  ```bash
+  python3 paging-linear-translate.py -P 1k -a 16k -p 32k -v -u 50
+  ```
+
+- **`clase_11/simulacion/`** — Práctica guiada de medición empírica de la TLB (método de Saavedra-Barrera, homework de fin del cap. 19 de OSTEP). No es una copia de un homework de OSTEP sino material propio generado con IA:
+  - `tlb_bench.c`: micro-benchmark (C11, `-O2 -Wall -Wextra`) que recorre un arreglo tocando un entero por página y cronometra con `clock_gettime`; fija el proceso a un CPU con `sched_setaffinity` (específico de Linux). Sus comentarios `[R1]`–`[R7]` mapean las 7 preguntas del homework original: son documentación interna para el docente y deben conservarse.
+  - `plot_tlb.py`: grafica ns/acceso vs. páginas (escala log2) y anota los escalones; **requiere `matplotlib`** (excepción a la regla de "sin dependencias").
+  - `Makefile`: parámetros configurables como variables (`PAGINAS_MIN`, `PAGINAS_MAX`, `REPETICIONES`, `CPU`, `ACCESOS_OBJETIVO`):
+    ```bash
+    make            # compila tlb_bench
+    make run        # genera resultados.csv
+    make plot       # genera resultados.png (corre run si hace falta)
+    make clean
+    make run PAGINAS_MAX=16384 CPU=-1   # ejemplo: menos RAM, sin pinning
+    ```
+  - `README.md`: guía dirigida al estudiante, autocontenida; la atribución a Saavedra-Barrera/OSTEP vive **solo** en su sección final "Referencias" (no narrar la procedencia en el cuerpo).
+  - `ABOUT.md`: nota interna para el docente (no para estudiantes) con el historial de decisiones de diseño de la práctica; consultarla antes de modificar cualquiera de estos archivos. Está en `.gitignore` y existe solo en la copia local: no debe subirse al remoto.
+
+No hay build system, linter ni suite de pruebas a nivel de repositorio: cada script/Makefile es independiente y se ejecuta/compila desde su propia carpeta como se indica arriba. Los programas en C se compilan con `gcc` (con `-Wall`, y `-pthread` cuando usan hilos); los scripts en Python (Python 3) no tienen dependencias externas — se ejecutan directo con `python3` — salvo `clase_11/simulacion/plot_tlb.py`, que necesita `matplotlib`.
 
 ## Convenciones de contenido
 

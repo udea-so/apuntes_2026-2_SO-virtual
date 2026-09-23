@@ -53,3 +53,6 @@ dkms.conf
 
 # debug information files
 *.dwo
+
+# Notas internas del docente (no se publican)
+clase_11/simulacion/ABOUT.md
