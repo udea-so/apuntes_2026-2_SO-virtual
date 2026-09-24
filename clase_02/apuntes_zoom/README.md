@@ -111,7 +111,7 @@ int main(int argc, char *argv[])
 
     while (1) {
       printf("%s\n", str);
-      wait(5);
+      wait(1);
     }
     return 0;
 }
@@ -169,12 +169,15 @@ void wait(int howlong) {
 
 int main(int argc, char *argv[]) {
     int *p;
+    //allocates memory
     p = malloc(sizeof(int));
-    assert(p != NULL);
+    //prints address of memory, inserting 0
     printf("(%d) addr pointed to by p: %p\n", (int) getpid(), p);
+    // assign input to address stored in p
     *p = atoi(argv[1]);
-    while (1) {
-        Spin(1);
+    //loop every second and increment address value of p
+    while (1) {  
+        wait(1);
         *p = *p + 1;
         printf("(%d) value of p: %d\n", getpid(), *p);
     }
@@ -193,6 +196,9 @@ prompt> ./2-mem & ./2-mem
 (1337) p: 0x100100080
 ...
 ```
+
+> [!Note]
+> En la captura de clase, la versión del programa imprime la dirección de `p` en cada iteración. Con el `mem.c` del repositorio (el de arriba), cada instancia imprime además el **valor** de su propio contador, que se incrementa de forma independiente: `./mem 1 & ./mem 100 &`.
 
 ### Concurrencia
 
@@ -237,8 +243,11 @@ Con pocas iteraciones el resultado es el esperado (el doble de `loops`), pero al
 ./threads 10000     → Final value : 20000
 ./threads 100000    → Final value : 156427   (se esperaba 200000)
 ./threads 100000    → Final value : 163340
+./threads 100000    → Final value : 200000
 ./threads 100000    → Final value : 139245
 ```
+
+Incluso cuando el resultado es el esperado (200000), es por azar: con los mismos argumentos, cada ejecución puede dar un valor distinto.
 
 ### Persistencia
 
@@ -268,6 +277,9 @@ prompt> ./per
 prompt> cat file_tmp
 hello world
 ```
+
+> [!Note]
+> La captura de clase corresponde a una versión del programa (`per`) que escribe en `file_tmp`. Con el código de arriba, o con el `io.c` del repositorio, el archivo queda en `/tmp/file`: `./io` y luego `cat /tmp/file`.
 
 ## Objetivos de Diseño de los Sistemas Operativos
 
