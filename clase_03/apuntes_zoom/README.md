@@ -67,7 +67,7 @@ Tres conceptos son los pilares que permiten que el software interactúe con el h
 
 * **Abstracción** (lo que "ve" el usuario/programador): interfaz simplificada que oculta la complejidad física del hardware — por ejemplo, `process`, `thread`, `file`, `socket`, `memory page`.
 * **Mecanismos** (el "cómo" se hace): las funciones de bajo nivel que implementan una operación — por ejemplo, `create`, `schedule`, `open`, `write`, `locate`.
-* **Políticas** (el "quién" y "cuándo"): el conjunto de reglas o algoritmos que deciden cómo se usan los mecanismos — por ejemplo, *Last Recently Used* (LRU), *Earliest Deadline First* (EDF).
+* **Políticas** (el "quién" y "cuándo"): el conjunto de reglas o algoritmos que deciden cómo se usan los mecanismos — por ejemplo, *Least Recently Used* (LRU), *Earliest Deadline First* (EDF).
 
 | | Abstracción | Mecanismos | Políticas |
 | --- | --- | --- | --- |
@@ -189,7 +189,7 @@ struct proc {
 
 ## El Modelo de Estados en Linux
 
-Linux extiende el modelo de tres estados con transiciones adicionales, representadas en la siguiente convención de letras: **R** (ejecutando/seleccionado por el *scheduler*), **S** (espera de una señal o evento I/O), **D** (espera un evento de E/S, no interrumpible), **T** (detenido, esperando la señal apropiada), **Z** (*zombie*: terminó y queda a la espera de que el padre acceda a su estado/estadísticas), **X** (muerto: no hay ningún proceso a la espera, los datos del proceso pueden liberarse). La transición de **S** a **X** directamente no existe en sistemas Linux.
+Linux extiende el modelo de tres estados con transiciones adicionales, representadas en la siguiente convención de letras: **R** (ejecutando/seleccionado por el *scheduler*), **S** (espera de una señal o evento I/O), **D** (espera un evento de E/S, no interrumpible), **T** (detenido, esperando la señal apropiada), **Z** (*zombie*: terminó y queda a la espera de que el padre acceda a su estado/estadísticas), **X** (muerto: no hay ningún proceso a la espera, los datos del proceso pueden liberarse). La transición directa de **R** a **X** no existe en sistemas Linux: un proceso que termina pasa primero por **Z**.
 
 ## Resumen y Conclusión
 
