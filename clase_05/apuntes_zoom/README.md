@@ -221,9 +221,9 @@ Al relajar la suposición 4 (uso exclusivo de CPU), se incorporan las operacione
 | A | 40 | 10 | 30 | 10 |
 | B | 40 | — | — | — |
 
-**Sin conciencia de I/O** (*not I/O aware*): la CPU permanece ociosa mientras A espera su I/O, antes de que B pueda usarla.
+**Sin conciencia de I/O** (*not I/O aware*): la CPU permanece ociosa mientras A espera su I/O, antes de que B pueda usarla. A termina en t=70 y B se ejecuta de t=70 a t=110.
 
-$$T_{ta(avg)}=\frac{70+120}{2}=95 \qquad T_{response(avg)}=\frac{0+70}{2}=35$$
+$$T_{ta(avg)}=\frac{70+110}{2}=90 \qquad T_{response(avg)}=\frac{0+70}{2}=35$$
 
 **Con solapamiento** (*I/O-aware*, *overlap*): el planificador (aplicando STCF) trata cada ráfaga de CPU como un trabajo independiente, de forma que B usa la CPU mientras A está bloqueado esperando I/O.
 
