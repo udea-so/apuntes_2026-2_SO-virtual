@@ -89,6 +89,13 @@ Se reemplaza B por un proceso interactivo: A (arrival=0, run-time=200) y B (arri
 
 B nunca agota su quantum, pues cede la CPU tras solo 1 ms para realizar una operación de I/O de 9 ms (Regla 4b). Por esta razón, B permanece siempre en Q2, la cola de mayor prioridad. Mientras B está bloqueado en I/O, el planificador ejecuta a A, que permanece degradado en Q0. El MLFQ logra así mantener al proceso interactivo con la prioridad más alta durante toda su ejecución.
 
+> [!Note]
+> La figura del ejemplo aplica las Reglas 4a/4b. El simulador del curso, en cambio, acumula por defecto el tiempo de CPU consumido en cada nivel (como la **Nueva Regla 4**, vista más adelante): con el comando anterior, B completa 10 ms acumulados en Q2 y baja a Q1 en t=150. Para reproducir la figura, en la que B se queda siempre en Q2, se agrega la bandera `-S` (*stay after I/O*):
+>
+> ```
+> ./mlfq.py -l 0,200,0:50,15,1 -q 10 -i 9 -S -c
+> ```
+
 ### Ejemplo Resumen: Tres Procesos
 
 Con un *workload* de tres procesos — A (*long-running*, CPU-bound), B (*short-running*) y C (interactivo) — se observa el comportamiento combinado: A desciende progresivamente hasta Q0 y permanece allí ejecutando en ráfagas de 10 ms; B, al llegar, interrumpe a A desde Q2, pasa brevemente por Q1 y termina; C, por ser interactivo, se mantiene siempre en Q2 con ráfagas cortas intercaladas de I/O.
