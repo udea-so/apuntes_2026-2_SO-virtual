@@ -14,9 +14,9 @@ Cada `clase_NN/` corresponde a una sesión de clase y sigue (aproximadamente) es
 - `apuntes/`: notas de clase en Markdown, con sus imágenes/GIFs de apoyo y, cuando aplica, el código o simulador asociado a esa clase. Es material teórico curado manualmente por el profesor.
 - `apuntes_zoom/`: carpeta hermana de `apuntes/`, dedicada exclusivamente al resumen de la sesión generado combinando el manuscrito anotado con el/los resumen(es) de Zoom de la clase. Se genera siguiendo `prompt_maestro_apuntes_clase_so_v1.1.md` (raíz del repo) — ver esa guía para la plantilla, reglas de fidelidad a la fuente y convención de usar diagramas Mermaid donde ayuden a la pedagogía. No duplica código ni simuladores: solo referencia los ya existentes en `apuntes/` o en la carpeta hermana correspondiente. Existe (retroactivamente, un único `README.md` por carpeta) para `clase_02` a `clase_08`; algunas clases se dictaron en más de un día calendario y el propio `apuntes_zoom/README.md` señala con una nota el corte de sesión (p. ej. `clase_04` combina las sesiones del 13/08 y 18/08). Aún no existe para `clase_09`, `clase_10` ni `clase_11`.
 - En algunas clases el código/simulador vive además en una carpeta hermana (`simulacion/`, `simulador/`), fuera de `apuntes/`.
-- No todas las clases tienen `apuntes/`: `clase_10` (paginación) y `clase_11` (TLB) por ahora solo tienen diapositivas (y, en `clase_10`, el manuscrito anotado) más su carpeta de simulador/simulación. `clase_11` aún no tiene `.xopp` ni `_annotated.pdf`.
+- `clase_11` (TLB) aún no tiene `.xopp` ni `_annotated.pdf`.
 
-Dentro de `clase_07/apuntes/` (`address_spaces/`), `clase_08/apuntes/` (`address_translation_base-bound/`) y `clase_09/apuntes/` (`segmentation/`) hay subtemas, cada uno con su propio `README.md`, su `img/` y, cuando corresponde, una carpeta `lab/` o `src/` con el enunciado del laboratorio y su código fuente. Aunque `clase_07` y `clase_08` tienen subtemas, su `apuntes_zoom/README.md` sigue siendo único y directo bajo `apuntes_zoom/` (no dividido por subtema); el patrón `apuntes_zoom/<subtema>/README.md` descrito para clases con subtemas aún no se ha usado en la práctica.
+Dentro de `clase_07/apuntes/` (`address_spaces/`), `clase_08/apuntes/` (`address_translation_base-bound/`), `clase_09/apuntes/` (`segmentation/`), `clase_10/apuntes/` (`intro-to-paging/`) y `clase_11/apuntes/` (`translation-lookaside-buffers/`) hay subtemas, cada uno con su propio `README.md`, su `img/` y, cuando corresponde, una carpeta `lab/` o `src/` con el enunciado del laboratorio y su código fuente. Aunque `clase_07` y `clase_08` tienen subtemas, su `apuntes_zoom/README.md` sigue siendo único y directo bajo `apuntes_zoom/` (no dividido por subtema); el patrón `apuntes_zoom/<subtema>/README.md` descrito para clases con subtemas aún no se ha usado en la práctica.
 
 ## Código de ejemplo y simuladores por clase
 
@@ -54,6 +54,8 @@ Dentro de `clase_07/apuntes/` (`address_spaces/`), `clase_08/apuntes/` (`address
   ```
 
 - **`clase_09/apuntes/segmentation/src/seg.c`** — Fragmento de pseudocódigo (no compilable, sin `Makefile`) que ilustra la traducción de direcciones con segmentación.
+
+- **`clase_10/apuntes/intro-to-paging/src/paging.c`** — Igual que el anterior, pseudocódigo no compilable (sin `Makefile`) de la traducción de direcciones con paginación; también aparece embebido en su `README.md`.
 
 - **`clase_09/simulador/segmentation.py`** — Simulador de segmentación (homework `vm-segmentation` de OSTEP):
   ```bash
