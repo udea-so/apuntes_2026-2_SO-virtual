@@ -1,3 +1,5 @@
+![Built with AI](https://img.shields.io/badge/Built%20with-AI-blue.svg)
+
 ## Tarea (Medición)
 
 Esta tarea le presenta una nueva herramienta, `vmstat`, y cómo puede emplearse para comprender el uso de memoria, CPU y E/S. Lea el [README](https://github.com/remzi-arpacidusseau/ostep-homework/tree/master/vm-beyondphys) asociado y examine el código en [`mem.c`](mem.c) antes de continuar con los ejercicios y preguntas que se presentan a continuación.
@@ -30,6 +32,31 @@ grep MemTotal /proc/meminfo
 ```
 
 > **Advertencia:** ejecutar `mem` con tamaños cercanos o superiores a la memoria del sistema puede volverlo muy lento o provocar que el sistema operativo finalice procesos. Se recomienda hacerlo en una máquina virtual o en un computador donde no haya trabajo sin guardar.
+
+### Entorno de ejecución
+
+Las preguntas 2 a 7 dependen de cómo está configurado el sistema donde se ejecuta `mem`. Antes de comenzar, identifique su entorno en la siguiente tabla.
+
+| Entorno | Qué tener en cuenta |
+|---|---|
+| **Linux nativo** | Es el entorno de referencia. Verifique que tenga swap con `swapon --show`: si no muestra nada, no habrá swapping y el sistema operativo puede finalizar `mem` cuando se agote la memoria. Algunas distribuciones usan swap comprimido en memoria (zram), lo que cambia el comportamiento esperado. |
+| **Linux en una máquina virtual (VirtualBox, VMware, UTM, etc.)** | Calcule los tamaños de `mem` con la memoria asignada a la máquina virtual (`MemTotal` dentro de ella), no con la del computador anfitrión. El disco de la máquina virtual es un archivo del anfitrión, por lo que su desempeño no es representativo de un dispositivo real (pregunta 7). Si el anfitrión tiene poca memoria libre, las mediciones tendrán más ruido. |
+| **Windows con WSL 2** | WSL 2 se ejecuta como una máquina virtual con límites propios. Por defecto, se le asigna el 50 % de la memoria de Windows y un swap del 25 % de esa memoria, redondeado hacia arriba al GB más cercano. Ambos valores se pueden cambiar en `%UserProfile%\.wslconfig` y se aplican con `wsl --shutdown`. WSL también puede reclamar automáticamente la memoria en caché, lo que puede afectar la columna `free` (pregunta 2). Calcule los tamaños con `MemTotal` dentro de WSL. |
+| **Windows con WSL 1** | La configuración de memoria y swap (`.wslconfig`) no aplica a WSL 1, que no se ejecuta como máquina virtual. Utilice WSL 2. |
+| **macOS** | macOS no es Linux: no incluye `/proc/meminfo`, `free` ni `swapon`, y su swap se crea de forma dinámica en el disco de arranque. Por eso las preguntas 2 a 7 no se pueden desarrollar tal como están escritas. Ejecute la actividad en una máquina virtual Linux dentro del Mac (por ejemplo, UTM o VMware Fusion) y siga las indicaciones de la fila de máquina virtual. |
+
+> **Nota:** estas mediciones sirven para observar comportamiento relativo (con swapping frente a sin swapping), no para comparar números absolutos entre computadores. Es normal que los valores varíen entre entornos; lo importante es el comportamiento que se observa y su explicación.
+
+**Datos del entorno (recomendado).** Junto con sus respuestas, se recomienda indicar los datos de su entorno:
+
+```sh
+uname -a
+free -m
+swapon --show
+nproc
+```
+
+Indique además si se trata de Linux nativo, máquina virtual o WSL 2, y si el disco es HDD o SSD.
 
 ### Preguntas
 
@@ -227,3 +254,7 @@ Para cada dispositivo (disco duro clásico, SSD, arreglo RAID), repita la medici
 
 - Arpaci-Dusseau, R. H. y Arpaci-Dusseau, A. C. *Operating Systems: Three Easy Pieces*. Capítulo 21, "Beyond Physical Memory: Mechanisms": <https://pages.cs.wisc.edu/~remzi/OSTEP/vm-beyondphys.pdf>
 - Tarea original (Measurement) y código fuente de `mem.c`: <https://github.com/remzi-arpacidusseau/ostep-homework/tree/master/vm-beyondphys>
+- Microsoft. "Advanced settings configuration in WSL": <https://learn.microsoft.com/en-us/windows/wsl/wsl-config>
+
+> [!IMPORTANT]
+> **Nota de Transparencia:** El contenido ha sido supervisado, validado y refinado por intervención humana para garantizar su precisión técnica y coherencia pedagógica. No obstante, pueden haber errores.
