@@ -1,10 +1,10 @@
 ![Built with AI](https://img.shields.io/badge/Built%20with-AI-blue.svg)
 
-## Tarea (Medición)
+# Tarea (Medición)
 
 Esta tarea le presenta una nueva herramienta, `vmstat`, y cómo puede emplearse para comprender el uso de memoria, CPU y E/S. Lea el [README](https://github.com/remzi-arpacidusseau/ostep-homework/tree/master/vm-beyondphys) asociado y examine el código en [`mem.c`](mem.c) antes de continuar con los ejercicios y preguntas que se presentan a continuación.
 
-### Preparación
+## Preparación
 
 Requisitos: un sistema Linux con `gcc`, `make` y `vmstat`.
 
@@ -33,7 +33,7 @@ grep MemTotal /proc/meminfo
 
 > **Advertencia:** ejecutar `mem` con tamaños cercanos o superiores a la memoria del sistema puede volverlo muy lento o provocar que el sistema operativo finalice procesos. Se recomienda hacerlo en una máquina virtual o en un computador donde no haya trabajo sin guardar.
 
-### Entorno de ejecución
+## Entorno de ejecución
 
 Las preguntas 2 a 7 dependen de cómo está configurado el sistema donde se ejecuta `mem`. Antes de comenzar, identifique su entorno en la siguiente tabla.
 
@@ -58,9 +58,9 @@ nproc
 
 Indique además si se trata de Linux nativo, máquina virtual o WSL 2, y si el disco es HDD o SSD.
 
-### Preguntas
+## Preguntas
 
-#### Pregunta 1
+### Pregunta 1
 
 Primero, abra dos conexiones de terminal separadas a la misma máquina, de modo que pueda ejecutar fácilmente algo en una ventana y en la otra.
 
@@ -97,7 +97,7 @@ for i in 1 2 3; do ./mem 1 > /dev/null & done
 pkill -x mem
 ```
 
-#### Pregunta 2
+### Pregunta 2
 
 A continuación, observe algunas de las estadísticas de memoria mientras se ejecuta `mem`. Preste atención a dos columnas: `swpd` (la cantidad de memoria virtual usada) y `free` (la cantidad de memoria inactiva). Ejecute `./mem 1024` (que asigna 1024 MB) y observe cómo cambian estos valores. Luego finalice el programa en ejecución (escribiendo control-c) y observe de nuevo cómo cambian los valores. ¿Qué nota en los valores? En particular, ¿cómo cambia la columna `free` cuando el programa termina? ¿Aumenta la cantidad de memoria libre en la cantidad esperada cuando `mem` termina?
 
@@ -113,7 +113,7 @@ Terminal B:
 
 Observe `swpd` y `free` mientras el programa se ejecuta. Luego detenga el programa con control-c y siga observando las mismas columnas.
 
-#### Pregunta 3
+### Pregunta 3
 
 A continuación, observe las columnas de swap (`si` y `so`), que indican cuánto swapping se está llevando a cabo hacia y desde el disco. Por supuesto, para activarlas, deberá ejecutar `mem` con grandes cantidades de memoria. Primero, examine cuánta memoria libre hay en su sistema Linux (por ejemplo, escribiendo `cat /proc/meminfo`; escriba `man proc` para obtener detalles sobre el sistema de archivos `/proc` y los tipos de información que puede encontrar allí). Una de las primeras entradas de `/proc/meminfo` es la cantidad total de memoria en su sistema. Suponga que es algo así como 8 GB de memoria; si es así, comience ejecutando `mem 4000` (aproximadamente 4 GB) y observando las columnas de swap in/out. ¿Alguna vez muestran valores distintos de cero? Luego, intente con 5000, 6000, etc. ¿Qué sucede con estos valores cuando el programa entra en el segundo loop (y los siguientes), en comparación con el primer loop? ¿Cuántos datos (en total) se intercambian hacia dentro y hacia fuera durante el segundo, el tercer y los loops subsiguientes? (¿tienen sentido los números?)
 
@@ -136,7 +136,7 @@ Suponiendo 8 GB de memoria, en la Terminal B ejecute, uno a la vez y deteniendo 
 
 Continúe con tamaños mayores. Observe las columnas `si` y `so` de `vmstat`, y compare lo que sucede durante el primer loop (`loop 0`) con los loops siguientes en la salida de `mem`.
 
-#### Pregunta 4
+### Pregunta 4
 
 Realice los mismos experimentos anteriores, pero ahora observe las otras estadísticas (como la utilización de CPU y las estadísticas de E/S de bloques). ¿Cómo cambian cuando `mem` se está ejecutando?
 
@@ -144,7 +144,7 @@ Realice los mismos experimentos anteriores, pero ahora observe las otras estadí
 
 Repita exactamente las ejecuciones de la pregunta 3, pero ahora observe en `vmstat` las columnas de `cpu` (`us`, `sy`, `id`, `wa`) y de E/S de bloques (`bi`, `bo`).
 
-#### Pregunta 5
+### Pregunta 5
 
 Examine ahora el desempeño. Elija una entrada para `mem` que quepa cómodamente en la memoria (por ejemplo, 4000 si la cantidad de memoria del sistema es de 8 GB). ¿Cuánto tarda el loop 0 (y los loops subsiguientes 1, 2, etc.)? Ahora elija un tamaño que esté cómodamente más allá del tamaño de la memoria (por ejemplo, 12000, nuevamente suponiendo 8 GB de memoria). ¿Cuánto tardan los loops en este caso? ¿Cómo se comparan los números de ancho de banda (bandwidth)? ¿Cuán diferente es el desempeño cuando se realiza swapping constantemente frente a cuando todo cabe cómodamente en la memoria? ¿Puede hacer una gráfica, con el tamaño de la memoria usada por `mem` en el eje x y el ancho de banda de acceso a dicha memoria en el eje y? Finalmente, ¿cómo se compara el desempeño del primer loop con el de los loops subsiguientes, tanto para el caso en que todo cabe en la memoria como para el caso en que no?
 
@@ -196,7 +196,7 @@ grep '^loop' salida_4000.txt
 
 > **Importante:** `stdbuf -oL` es necesario. Cuando la salida de `mem` se redirige a un archivo, el programa la acumula en un buffer y, al detenerlo, ese contenido se pierde: el archivo queda vacío.
 
-#### Pregunta 6
+### Pregunta 6
 
 El espacio de swap no es infinito. Puede emplear la herramienta `swapon` con la opción `-s` para ver cuánto espacio de swap está disponible. ¿Qué sucede si intenta ejecutar `mem` con valores cada vez más grandes, más allá de lo que parece estar disponible en el espacio de swap? ¿En qué punto falla la asignación de memoria?
 
@@ -225,7 +225,7 @@ echo $?
 
 Registre el tamaño a partir del cual ocurre la falla y compárelo con la memoria total más el espacio de swap.
 
-#### Pregunta 7
+### Pregunta 7
 
 Finalmente, si usted tiene un nivel avanzado, puede configurar su sistema para usar diferentes dispositivos de swap mediante `swapon` y `swapoff`. Lea las man pages para conocer los detalles. Si tiene acceso a hardware diferente, observe cómo cambia el desempeño del swapping al realizarlo hacia un disco duro clásico, un SSD basado en flash e incluso un arreglo RAID. ¿Cuánto puede mejorarse el desempeño del swapping mediante dispositivos más nuevos? ¿Qué tan cerca puede llegar del desempeño en memoria?
 
@@ -250,7 +250,7 @@ sudo swapon /dev/NOMBRE_DEL_DISPOSITIVO_NUEVO
 
 Para cada dispositivo (disco duro clásico, SSD, arreglo RAID), repita la medición de la pregunta 5 con el barrido `bw.sh`.
 
-### Referencias
+## Referencias
 
 - Arpaci-Dusseau, R. H. y Arpaci-Dusseau, A. C. *Operating Systems: Three Easy Pieces*. Capítulo 21, "Beyond Physical Memory: Mechanisms": <https://pages.cs.wisc.edu/~remzi/OSTEP/vm-beyondphys.pdf>
 - Tarea original (Measurement) y código fuente de `mem.c`: <https://github.com/remzi-arpacidusseau/ostep-homework/tree/master/vm-beyondphys>
