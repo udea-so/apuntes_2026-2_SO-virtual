@@ -223,7 +223,7 @@ Cuando la asignación falla, `mem` imprime `memory allocation failed` y termina.
 echo $?
 ```
 
-Registre el tamaño a partir del cual ocurre la falla y compárelo con la memoria total más el espacio de swap.
+Registre el tamaño a partir del cual ocurre la falla.
 
 ### Pregunta 7
 
@@ -257,4 +257,4 @@ Para cada dispositivo (disco duro clásico, SSD, arreglo RAID), repita la medici
 - Microsoft. "Advanced settings configuration in WSL": <https://learn.microsoft.com/en-us/windows/wsl/wsl-config>
 
 > [!IMPORTANT]
-> **Nota de Transparencia:** El contenido ha sido supervisado, validado y refinado por intervención humana para garantizar su precisión técnica y coherencia pedagógica. No obstante, pueden haber errores.
+> **Nota de Transparencia:** Este material se elaboró con apoyo de IA (traducción, guías de ejecución, subsección de entorno y el script `bw.sh`) y fue revisado por el docente. El comportamiento en macOS y WSL, y los escenarios con swapping real, están pendientes de validación con estudiantes. Pueden existir errores.
