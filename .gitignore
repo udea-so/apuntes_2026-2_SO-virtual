@@ -56,3 +56,7 @@ dkms.conf
 
 # Notas internas del docente (no se publican)
 clase_11/simulacion/ABOUT.md
+
+# Bytecode de Python (se genera al importar módulos, p. ej. common.py)
+__pycache__/
+*.pyc
