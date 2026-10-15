@@ -113,13 +113,14 @@ A diferencia de la syscall, en una interrupción el programa **no pide nada** �
 **Ejemplo — el teclado**: al presionar una tecla, el controlador del teclado genera una señal eléctrica hacia el *interrupt controller*, que a su vez interrumpe al procesador — sin importar qué estaba haciendo la CPU en ese instante. La secuencia completa es:
 
 ```mermaid
+%%{init: {"themeVariables": {"fontFamily": "Arial, Helvetica, sans-serif"}}}%%
 flowchart LR
-    A[Teclado: se presiona una tecla] --> B[Interrupt controller: genera la IRQ]
-    B --> C["do_IRQ(): consulta la tabla"]
+    A["Teclado:<br/>se presiona una tecla"] --> B["Interrupt controller:<br/>genera la IRQ"]
+    B --> C["do_IRQ():<br/>consulta la tabla"]
     C --> D{"¿Hay handler registrado?"}
-    D -- Sí --> E["handle_IRQ_event(): ejecuta el manejador"]
-    D -- No --> F["interrupción espuria: no hace nada"]
-    E --> G["ret_from_intr(): retorna al procesador"]
+    D -- Sí --> E["handle_IRQ_event():<br/>ejecuta el manejador"]
+    D -- No --> F["interrupción espuria:<br/>no hace nada"]
+    E --> G["ret_from_intr():<br/>retorna al procesador"]
     F --> G
 ```
 

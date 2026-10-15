@@ -181,6 +181,7 @@ Tener el par VPN–PFN en la TLB **elimina el viaje a la tabla de páginas**.
 ### Traducción con TLB: *hit* y *miss*
 
 ```mermaid
+%%{init: {"themeVariables": {"fontFamily": "Arial, Helvetica, sans-serif"}}}%%
 flowchart LR
     CPU["CPU genera la VA"] --> VPN["Extraer VPN"]
     VPN --> L{"¿VPN en la TLB?"}

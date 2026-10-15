@@ -90,10 +90,11 @@ $$T_{ta}(A)=100 \quad T_{ta}(B)=110 \quad T_{ta}(C)=120 \quad T_{ta(avg)}=\frac{
 El promedio de Turnaround Time pasa de 20 a 110 segundos. Este fenómeno se conoce como **Efecto Convoy**: ocurre cuando un proceso que requiere mucho tiempo de CPU se ejecuta primero (va por delante) de procesos más ligeros, haciendo que estos últimos esperen innecesariamente y que los tiempos de respuesta y finalización se resientan. El trabajo más grande es el que más influye en el turnaround promedio.
 
 ```mermaid
+%%{init: {"themeVariables": {"fontFamily": "Arial, Helvetica, sans-serif"}}}%%
 graph LR
     A["A (100s)"] --> B["B (10s)"]
     B --> C["C (10s)"]
-    C --> RQ[CPU libre]
+    C --> RQ["CPU libre"]
     style A fill:#f6ad55,stroke:#c05621,stroke-width:2px,color:#000
 ```
 

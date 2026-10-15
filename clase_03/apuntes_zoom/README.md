@@ -92,6 +92,7 @@ A nivel de la API, un proceso transita por los estados **new → ready ⇄ runni
 Para razonar sobre cómo el sistema operativo comparte la CPU, se usa un modelo simplificado de tres estados:
 
 ```mermaid
+%%{init: {"themeVariables": {"fontFamily": "Arial, Helvetica, sans-serif"}}}%%
 stateDiagram-v2
     [*] --> Ready: Created
     Ready --> Running: Scheduled

@@ -41,6 +41,7 @@ La paginación consiste en:
 > $size(page) = size(frame)$. Una página se copia completa en un frame, así que ambos deben tener el mismo tamaño.
 
 ```mermaid
+%%{init: {"themeVariables": {"fontFamily": "Arial, Helvetica, sans-serif"}}}%%
 flowchart LR
     VA["Página virtual<br/>VPN = i"] --> PT["Tabla de páginas<br/>PT[i] = j"]
     PT --> PF["Frame físico<br/>PFN = j"]
@@ -158,6 +159,7 @@ Con los datos del ejemplo ($size(PM) = 128$ B, 8 frames de 16 B):
 La traducción reemplaza el VPN por el PFN que indica la tabla y **conserva el offset**:
 
 ```mermaid
+%%{init: {"themeVariables": {"fontFamily": "Arial, Helvetica, sans-serif"}}}%%
 flowchart LR
     VA["VA = [VPN | offset]"] -->|"VPN (índice)"| PT["Tabla de páginas<br/>PFN = PT[VPN]"]
     PT -->|PFN| PA["PA = [PFN | offset]"]
@@ -522,16 +524,17 @@ else
 El pseudocódigo está también en [`apuntes/intro-to-paging/src/paging.c`](../apuntes/intro-to-paging/src/paging.c).
 
 ```mermaid
+%%{init: {"themeVariables": {"fontFamily": "Arial, Helvetica, sans-serif"}}}%%
 flowchart TD
-    A["VA"] --> B["VPN = (VA & VPN_MASK) >> SHIFT"]
-    B --> C["PTEAddr = PTBR + VPN * sizeof(PTE)"]
-    C --> D["PTE = AccessMemory(PTEAddr)<br/>(acceso a memoria #1)"]
+    A["VA"] --> B["VPN =<br/>(VA & VPN_MASK) #gt;#gt; SHIFT"]
+    B --> C["PTEAddr =<br/>PTBR + VPN * sizeof(PTE)"]
+    C --> D["PTE =<br/>AccessMemory(PTEAddr)<br/>(acceso a memoria #1)"]
     D --> E{"¿PTE.Valid?"}
     E -- "No" --> F["SEGMENTATION_FAULT"]
     E -- "Sí" --> G{"¿Permisos (Prot) OK?"}
     G -- "No" --> H["PROTECTION_FAULT"]
-    G -- "Sí" --> I["PA = (PFN #lt;#lt; PFN_SHIFT) | offset"]
-    I --> J["Register = AccessMemory(PA)<br/>(acceso a memoria #2)"]
+    G -- "Sí" --> I["PA =<br/>(PFN #lt;#lt; PFN_SHIFT) | offset"]
+    I --> J["Register =<br/>AccessMemory(PA)<br/>(acceso a memoria #2)"]
 ```
 
 > [!TIP]

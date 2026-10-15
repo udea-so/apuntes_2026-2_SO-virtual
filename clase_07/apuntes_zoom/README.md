@@ -19,6 +19,7 @@ La sesión abrió con un repaso rápido de la virtualización de CPU para tender
 * **Modelo de 3 estados** y colas de procesos, gestionados a través del **PCB (Process Control Block)**, que guarda estado del proceso, PID, program counter, registros, límites de memoria y lista de archivos abiertos.
 
 ```mermaid
+%%{init: {"themeVariables": {"fontFamily": "Arial, Helvetica, sans-serif"}}}%%
 stateDiagram-v2
     [*] --> Ready: create
     Ready --> Running: scheduled
@@ -148,15 +149,16 @@ El **Address Space** es la abstracción de la memoria física creada por el sist
 Analogía usada en clase: la memoria es como un armario donde cada tipo de objeto (zapatos, pantalones, camisas) ocupa un lugar específico; de igual forma, cada tipo de variable ocupa una sección determinada del Address Space.
 
 ```mermaid
+%%{init: {"themeVariables": {"fontFamily": "Arial, Helvetica, sans-serif"}}}%%
 flowchart TD
-    A["0 — Program Code<br/>(instrucciones + variables globales)"]
-    B["Heap<br/>(memoria dinámica: malloc / new)"]
+    A["0 — Program Code<br/>(instrucciones +<br/>variables globales)"]
+    B["Heap<br/>(memoria dinámica:<br/>malloc / new)"]
     C["espacio libre"]
-    D["Stack<br/>(variables locales, argumentos, valores de retorno)"]
+    D["Stack<br/>(variables locales,<br/>argumentos, valores<br/>de retorno)"]
     E["max"]
     A --> B
-    B -- "crece hacia direcciones más altas" --> C
-    C -- "crece hacia direcciones más bajas" --> D
+    B -- "crece hacia direcciones<br/>más altas" --> C
+    C -- "crece hacia direcciones<br/>más bajas" --> D
     D --> E
 ```
 

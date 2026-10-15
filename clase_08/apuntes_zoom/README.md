@@ -25,6 +25,7 @@ La virtualización de memoria, igual que la Ejecución Directa Limitada del Mód
 Ese soporte de hardware incluye modos de CPU, interrupciones, registros y, específicamente para memoria, mecanismos como *segment tables*, *TLB* y *page tables* (se verán en clases posteriores). El componente central es la **MMU (Memory Management Unit)**: reside físicamente dentro de la CPU, junto al Program Counter y los registros generales, y es la encargada de traducir cada dirección virtual (VA) que genera la CPU en una dirección física (PA) antes de acceder a la memoria principal.
 
 ```mermaid
+%%{init: {"themeVariables": {"fontFamily": "Arial, Helvetica, sans-serif"}}}%%
 flowchart LR
     CPU["CPU<br/>(PC genera VA)"] -->|VA| MMU["MMU<br/>(base / bounds)"]
     MMU -->|PA| MEM["Main Memory"]
@@ -73,8 +74,9 @@ La traducción implica dos pasos:
    $$PA = VA + base$$
 
 ```mermaid
+%%{init: {"themeVariables": {"fontFamily": "Arial, Helvetica, sans-serif"}}}%%
 flowchart TD
-    VA["Dirección Virtual (VA)"] --> CHK{"0 ≤ VA < bounds ?"}
+    VA["Dirección Virtual (VA)"] --> CHK{"0 ≤ VA #lt; bounds ?"}
     CHK -- "No" --> FAULT["Protection fault<br/>(violación de segmento)"]
     CHK -- "Sí" --> SUM["PA = VA + base"]
     SUM --> PA["Dirección Física (PA)"]

@@ -46,6 +46,7 @@ El costo está en el hardware: la MMU pasa de 2 registros a **6** (un par `base`
 Esta es la tabla del ejemplo que se usa en toda la clase, con un espacio de direcciones de 16K y una memoria física de 64K:
 
 ```mermaid
+%%{init: {"themeVariables": {"fontFamily": "Arial, Helvetica, sans-serif"}}}%%
 flowchart LR
     subgraph AS["Espacio de direcciones (16K)"]
         direction TB
@@ -57,7 +58,7 @@ flowchart LR
     end
     subgraph PM["Memoria física (64K)"]
         direction TB
-        P1["0K–16K: sistema operativo"]
+        P1["0K–16K:<br/>sistema operativo"]
         P2["26K–28K: stack"]
         P3["32K–34K: code"]
         P4["34K–36K: heap"]
@@ -120,11 +121,12 @@ El procedimiento general tiene dos pasos una vez se conoce el offset:
 > El concepto central de toda la traducción es el **offset**: la distancia desde el inicio del segmento hasta la dirección en cuestión.
 
 ```mermaid
+%%{init: {"themeVariables": {"fontFamily": "Arial, Helvetica, sans-serif"}}}%%
 flowchart TD
-    VA["Dirección virtual (VA)"] --> SEG{"¿A qué segmento pertenece?"}
+    VA["Dirección virtual (VA)"] --> SEG{"¿A qué segmento<br/>pertenece?"}
     SEG -- "code" --> OC["offset = VA"]
     SEG -- "heap" --> OH["offset = VA − VA(heap)"]
-    OC --> CHK{"0 ≤ offset < size(seg) ?"}
+    OC --> CHK{"0 ≤ offset #lt; size(seg) ?"}
     OH --> CHK
     CHK -- "No" --> FAULT["Fallo de segmentación<br/>(no hay PA)"]
     CHK -- "Sí" --> PA["PA = offset + base(seg)"]
@@ -286,6 +288,7 @@ Para hacerlo de forma segura se agrega **hardware adicional**: **bits de protecc
 Como code es de solo lectura y ejecución (sin escritura), varios procesos pueden apuntar al mismo segmento físico sin riesgo de que uno lo modifique.
 
 ```mermaid
+%%{init: {"themeVariables": {"fontFamily": "Arial, Helvetica, sans-serif"}}}%%
 flowchart LR
     P1["P1"] --> C1["code P1"]
     P1 --> H1["heap P1"]
