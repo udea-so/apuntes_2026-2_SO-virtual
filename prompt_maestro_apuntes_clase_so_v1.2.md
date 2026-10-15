@@ -86,6 +86,11 @@ comandos del simulador/laboratorio efectivamente mostrados en la sesión.]
   - `stateDiagram-v2`: transiciones entre estados de un proceso (Listo/Ejecutando/Bloqueado/Terminado) o de una cola en MLFQ.
   - `gantt` o `graph LR` con nodos por instante de tiempo: línea de tiempo de ejecución de procesos (como ya se hace con las tablas de turnaround/response time en `clase_05`).
   Si Mermaid no expresa bien el concepto (p. ej. un layout de memoria o un mapa de bits), se prioriza una imagen/captura del manuscrito antes que forzar un diagrama Mermaid poco claro. En cualquier caso, el diagrama debe representar fielmente lo mostrado o explicado en clase (ver Sección 3), no un ejemplo genérico del tema.
+  - **Texto recortado en los nodos**: Mermaid calcula el ancho de cada cuadro con una fuente y el visor (vista previa de VS Code, GitHub) puede dibujar el texto con otra más ancha, de modo que se pierden los últimos caracteres de las etiquetas largas (p. ej. "Excepción: segmentation fa..."). Para evitarlo, en todo diagrama con cuadros (`graph`/`flowchart`, `stateDiagram-v2`):
+    1. La primera línea dentro del bloque fija la fuente: `%%{init: {"themeVariables": {"fontFamily": "Arial, Helvetica, sans-serif"}}}%%`.
+    2. Las etiquetas largas de nodos y de flechas se parten con `<br/>` en líneas cortas (unas 20-25 letras por línea), p. ej. `G["Excepción:<br/>segmentation fault"]`.
+    3. Se evitan `<`, `>` y `≥` dentro de las etiquetas (se escriben en palabras: "menor que", "por debajo de"), porque algunos visores no los renderizan.
+    Los `sequenceDiagram` no necesitan este ajuste, porque sus mensajes van sobre las flechas y no dentro de cuadros. Precedente: `clase_12/apuntes_zoom/README.md`.
 - **Resumen y Conclusión** es condicional: solo cuando la clase cierra un ciclo temático completo (p. ej. el final del bloque de políticas de planificación) y amerita una tabla comparativa o síntesis. Una clase que introduce un tema nuevo sin cerrarlo aún no necesita esta sección.
 - **Referencia a OSTEP**: cuando el tema de la clase corresponde directamente a un capítulo del libro *Operating Systems: Three Easy Pieces*, puede mencionarse el capítulo entre paréntesis la primera vez que se nombra el tema (p. ej. "Ejecución Directa Limitada (OSTEP, cap. 6)"). No es obligatorio ni se fuerza si el manuscrito no lo menciona explícitamente.
 
