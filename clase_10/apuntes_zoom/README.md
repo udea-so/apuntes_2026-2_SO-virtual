@@ -618,13 +618,6 @@ Con un espacio de direcciones de 64 KB, páginas de 1 KB y el arreglo (4000 byte
 * Resolver las preguntas de la tarea del simulador en [`clase_10/simulador/README.md`](../simulador/README.md).
 * Para profundizar, leer los apuntes del tema en [`apuntes/intro-to-paging/`](../apuntes/intro-to-paging/).
 
-> [!NOTE]
-> **Evaluaciones**:
-> * El quiz de paginación se habilita al terminar el tema en clase.
-> * El primer parcial se hará en horario de clase, en una fecha que se concertará con el grupo después del 9/10. Será de una sola oportunidad, con límite de tiempo y con consulta de apuntes. Entran virtualización de memoria, paginación y swap.
-> * La actividad de seguimiento del módulo 1 es opcional, da bonificación para el parcial y cierra el 26/09.
-> * Para prepararse, en la plataforma están los talleres resueltos del módulo 2, un parcial anterior con su solución y los "pasteles" (resúmenes de semestres anteriores).
-
 ---
 
 > [!IMPORTANT]

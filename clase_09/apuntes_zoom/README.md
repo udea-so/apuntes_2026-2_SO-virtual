@@ -363,9 +363,6 @@ Las preguntas que guían la clase 10:
 * Descargar el simulador `segmentation.py`, repetir las traducciones de la clase y revisar en el código el cálculo de la PA para el stack.
 * Repasar las fórmulas de traducción (code, heap y stack) como preparación para las pruebas de escritorio.
 
-> [!NOTE]
-> No hubo quiz la semana del 10/09 porque el tema de segmentación aún no había terminado. El quiz de paginación se habilitará cuando se termine ese tema en clase.
-
 ---
 
 > [!IMPORTANT]

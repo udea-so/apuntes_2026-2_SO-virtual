@@ -562,11 +562,6 @@ $$size(PM) = 2^{36} = 2^6 \cdot 2^{30} = 64\text{ GB} \qquad num\_frames = \frac
 * Hacer la práctica guiada de medición de la TLB en [`clase_11/simulacion/`](../simulacion/README.md), que estima el tamaño de la TLB y el costo de un miss.
 * Para profundizar, leer los apuntes del tema en [`apuntes/translation-lookaside-buffers/`](../apuntes/translation-lookaside-buffers/README.md).
 
-> [!NOTE]
-> **Evaluaciones**:
-> * El primer parcial (módulos 1 y 2) está programado para el **22 de octubre**. Será con consulta de apuntes, así que conviene tener resúmenes y apuntes organizados para consultarlos rápido.
-> * La autoevaluación semanal del tema de TLB ya está disponible en la plataforma. Su información definitiva (número y fecha límite) se anunciará en Moodle.
-
 ---
 
 > [!IMPORTANT]

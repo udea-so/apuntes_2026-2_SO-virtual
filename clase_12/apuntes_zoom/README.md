@@ -565,9 +565,6 @@ Preguntas:
 * Notas de ECE 3600 sobre el cap. 21 de OSTEP: <https://fog.misty.com/perry/os/Chapters/21-vm-beyondphys/>
 * Senanan, K. *How computer memory works* (TED-Ed): <https://www.youtube.com/watch?v=p3q5zWCw8J4>
 
-> [!NOTE]
-> **Evaluaciones:** el primer parcial (módulos 1 y 2) está programado para el **22 de octubre** e incluye este tema y el de la próxima clase (políticas de reemplazo).
-
 ---
 
 > [!IMPORTANT]
