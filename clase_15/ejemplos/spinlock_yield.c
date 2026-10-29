@@ -36,7 +36,7 @@ void yield() {
 }
 
 // ---------------------------------------------------------------
-// Lock con yield — slide 54 (OSTEP figura 28.8)
+// Lock con yield — diapositivas p. 61-63 (OSTEP figura 28.8)
 // Mejora sobre spinlock puro: en lugar de girar consumiendo CPU,
 // el hilo cede el procesador mientras espera.
 //

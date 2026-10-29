@@ -14,7 +14,6 @@ counter = Counter()
 max_count = 0  # renombrado para no pisar el built-in max() de Python
 
 def mythread(arg):
-    print(f"{arg}: begin")
     for i in range(max_count):
         # SIN lock: multiples hilos pueden leer, incrementar y
         # escribir counter.value al mismo tiempo.
@@ -29,7 +28,8 @@ def mythread(arg):
         # Es el equivalente Python de sched_yield() en C.
         #
         # Nota: el GIL de CPython reduce (pero no elimina) las race
-        # conditions. Sin time.sleep(0) pueden no observarse con 2 hilos.
+        # conditions. Sin time.sleep(0) pueden no observarse con pocas
+        # iteraciones, pero con 1000000 aparecen igual.
         tmp = counter.value   # (1) lee
         time.sleep(0)         # libera el GIL — el otro hilo corre aqui
         tmp = tmp + 1         # (2) incrementa la copia local
@@ -42,7 +42,6 @@ if __name__ == "__main__":
         sys.exit(1)
 
     max_count = int(sys.argv[1])
-    print("main: begin")
     print(f"main: begin [counter = {counter.value}]")
 
     p1 = threading.Thread(target=mythread, args=('A',))
