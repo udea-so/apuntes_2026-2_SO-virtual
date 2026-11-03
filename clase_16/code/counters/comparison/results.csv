@@ -1,0 +1,13 @@
+Threads,CounterType,Time(s)
+1,Precise,0.1938
+1,Approximate,0.2044
+2,Precise,1.1758
+2,Approximate,0.4731
+4,Precise,1.8436
+4,Approximate,0.7824
+8,Precise,3.7376
+8,Approximate,0.8834
+16,Precise,7.1387
+16,Approximate,1.8521
+32,Precise,14.5827
+32,Approximate,3.7469

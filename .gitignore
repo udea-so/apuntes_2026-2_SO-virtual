@@ -61,3 +61,13 @@ clase_15/ejemplos/NOVEDADES.md
 # Bytecode de Python (se genera al importar módulos, p. ej. common.py)
 __pycache__/
 *.pyc
+
+# Checkpoints de Jupyter
+.ipynb_checkpoints/
+
+# Ejecutables ELF sin extensión traídos del semestre pasado (clase_16)
+clase_16/code/counters/counter_without_locks/counter_test
+clase_16/code/counters/precise_counter/benchmark_precise_counter
+clase_16/code/counters/sloppy_counter_bug/benchmark_sloppy
+clase_16/code/counters/sloppy_counter_bug/benchmark_thresh
+clase_16/code/counters/sloppy_counter_bug/sloppy_example
