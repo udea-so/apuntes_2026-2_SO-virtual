@@ -1,135 +1,198 @@
-# Implementación de Lista Enlazada (Sin Bloqueos / No Thread-Safe)
+# Lista enlazada sin locks (versión no *thread-safe*)
 
-Este directorio contiene una implementación básica de una **Lista Simplemente Enlazada** en lenguaje C. 
+Este directorio contiene una implementación básica de una **lista simplemente enlazada** en C, sin ningún mecanismo de sincronización.
 
-**Propósito:** Este código sirve como **caso base** para demostrar problemas de concurrencia (como Condiciones de Carrera) cuando múltiples hilos intentan manipular una estructura de datos compartida sin mecanismos de sincronización (locks/mutexes).
+**Propósito:** servir como **caso base** para evidenciar las condiciones de carrera (*race conditions*) que se producen cuando varios hilos modifican una estructura de datos compartida sin exclusión mutua. La versión corregida, protegida con un *mutex*, se encuentra en la carpeta [`con_locks/`](../con_locks/).
 
 ---
 
-## Descripción Técnica
+## Descripción técnica
 
-La estructura implementada es una lista enlazada simple donde cada nodo contiene un valor entero y un puntero al siguiente nodo.
+Cada nodo almacena un valor entero (`key`) y un puntero al nodo siguiente.
 
-* **Tipo:** Lista Simplemente Enlazada (Singly Linked List).
-* **Gestión de Memoria:** Dinámica (uso de `malloc` y `free`).
-* **Comportamiento:** LIFO (Last-In, First-Out). Las inserciones se realizan en la cabeza (`head`) para mantener una complejidad O(1).
+* **Tipo:** lista simplemente enlazada (*singly linked list*).
+* **Gestión de memoria:** dinámica, mediante `malloc` (la lista no se libera al final del programa, pues el objetivo del ejemplo es otro).
+* **Inserción:** siempre en la cabeza (`head`), con complejidad O(1). En consecuencia, el último elemento insertado es el primero de la lista.
 
-### Estructuras de Datos (`list.h`)
+### Archivos
+
+| Archivo | Contenido |
+| --- | --- |
+| [`linked_list.h`](linked_list.h) | Definición de `node_t` y `list_t` y prototipos de las funciones. |
+| [`linked_list.c`](linked_list.c) | Implementación de `List_Init`, `List_Insert` y `List_Lookup`. |
+| [`main.c`](main.c) | Programa de prueba con dos hilos que insertan de forma concurrente. |
+| [`Makefile`](Makefile) | Compila los dos `.c` y genera el ejecutable `main.out`. |
+
+### Estructuras de datos (`linked_list.h`)
 
 ```c
 typedef struct __node_t {
-    int key;                // Valor almacenado
-    struct __node_t *next;  // Puntero al siguiente nodo
+  int key;                // valor almacenado
+  struct __node_t *next;  // puntero al siguiente nodo
 } node_t;
 
 typedef struct __list_t {
-    node_t *head;           // Puntero al primer elemento de la lista
+  node_t *head;           // puntero al primer elemento de la lista
 } list_t;
-````
+```
 
-### Visualización de la Estructura
+### Representación de la estructura
 
-Representación de una lista con dos elementos (`10` y `20`):
+Lista con dos elementos, tras insertar primero `20` y luego `10`:
 
 ```mermaid
+%%{init: {"themeVariables": {"fontFamily": "Arial, Helvetica, sans-serif"}}}%%
 graph LR
-    L[List_t] -->|head| N1
-    subgraph Memoria Heap
-        N1(Key: 10) -->|next| N2(Key: 20)
-        N2 -->|next| NULL
+    L["list_t L"] -->|head| N1
+    subgraph Heap
+        N1("key: 10") -->|next| N2("key: 20")
+        N2 -->|next| NULL["NULL"]
     end
     style L fill:#f9f,stroke:#333,stroke-width:2px
     style N1 fill:#bbf,stroke:#333
     style N2 fill:#bbf,stroke:#333
 ```
 
-## Funciones Principales
+## Funciones principales
 
-Las funciones están declaradas en `list.h` e implementadas en `list.c`:
+Declaradas en `linked_list.h` e implementadas en `linked_list.c`:
 
-1.  **`List_Init(list_t *L)`**
-      * Inicializa la lista estableciendo el puntero `head` a `NULL`.
-2.  **`List_Insert(list_t *L, int key)`**
-      * Crea un nuevo nodo con el valor `key`.
-      * Inserta el nuevo nodo al **inicio** de la lista.
-      * **Nota:** Esta es la sección crítica donde ocurren los fallos en entornos concurrentes.
-3.  **`List_Lookup(list_t *L, int key)`**
-      * Recorre la lista buscando un nodo que contenga `key`.
-      * Retorna `0` si lo encuentra, `-1` si no.
+1. **`void List_Init(list_t *L)`**: inicializa la lista asignando `NULL` a `head`.
+2. **`int List_Insert(list_t *L, int key)`**: reserva un nodo nuevo, le asigna `key` y lo enlaza al **inicio** de la lista. Retorna `0` si tiene éxito y `-1` si falla `malloc`. Las dos últimas instrucciones (enlazar el nodo y actualizar `head`) constituyen la **sección crítica**.
+3. **`int List_Lookup(list_t *L, int key)`**: recorre la lista buscando `key`. Retorna `0` si lo encuentra y `-1` en caso contrario.
 
-## Compilación y Ejecución
+## Programa de prueba (`main.c`)
 
-Para compilar el código, asegúrate de tener `gcc` instalado. Se incluye la bandera `-pthread` porque el archivo `main.c` lanza hilos para probar la robustez de la lista.
+El programa crea **dos hilos** que insertan en la misma lista global `L`:
 
-### 1\. Compilar
+* `my_thread1` inserta los números pares menores que `END_VALUE`: `0, 2, 4, …`
+* `my_thread2` inserta los números impares menores que `END_VALUE`: `1, 3, 5, …`
 
-```bash
-gcc -o main main.c list.c -Wall -pthread
-```
+Una vez que ambos hilos terminan (`pthread_join`), el hilo principal busca con `List_Lookup` cada valor entre `0` y `END_VALUE - 1` y cuenta cuántos se encuentran. Si la lista fuera correcta, el conteo coincidiría con `END_VALUE`. Por último, imprime los 10 primeros nodos de la lista, es decir, los 10 últimos que se insertaron.
 
-### 2\. Ejecutar Pruebas
+El número de hilos (dos) está fijo. `END_VALUE` vale `50000` por defecto y puede cambiarse con el primer argumento del programa. El [`main.c`](main.c) es idéntico al de [`con_locks/`](../con_locks/main.c): la única diferencia entre las dos versiones está en la lista.
 
-El archivo `main.c` realiza una prueba de inserción masiva concurrente.
+> [!NOTE]
+> La verificación final hace `END_VALUE` búsquedas sobre una lista de hasta `END_VALUE` nodos, es decir, su costo crece con el cuadrado de `END_VALUE`. Con el valor por defecto tarda alrededor de 2 s. Duplicar `END_VALUE` multiplica ese tiempo por cerca de cuatro.
 
-```bash
-./main [número_de_hilos] [iteraciones_por_hilo]
-```
+## Compilación y ejecución
 
-**Ejemplo:**
+Se requiere `gcc` y la biblioteca de hilos POSIX (Linux o WSL).
+
+### 1. Compilar
+
+Con el `Makefile` incluido:
 
 ```bash
-./main 2 100000
+make          # genera main.out
+make clean    # elimina los .o y el ejecutable
 ```
 
-*Esto lanzará 2 hilos, cada uno insertando 100,000 elementos.*
+O bien, directamente:
 
-## Advertencia de Concurrencia (Race Conditions)
+```bash
+gcc -Wall -O2 -g -pthread -o main.out main.c linked_list.c
+```
 
-**Esta implementación NO es segura para hilos (Not Thread-Safe).**
+### 2. Ejecutar
 
-Si ejecutas este código con un solo hilo, funcionará perfectamente. Sin embargo, si múltiples hilos llaman a `List_Insert` simultáneamente sobre la misma lista, ocurrirá una **Condición de Carrera**.
+```bash
+./main.out            # END_VALUE = 50000
+./main.out 10000      # END_VALUE = 10000
+```
 
-### El Problema
+### Salida posible
 
-La inserción consta de dos pasos críticos que no son atómicos:
+Las siguientes salidas corresponden a una ejecución de referencia del 05/11/2026 en la máquina descrita en [`entorno_ejecucion.md`](../../../../clase_14/ejemplos/entorno_ejecucion.md) (WSL1, 8 CPU lógicas). En otra máquina las cifras serán distintas, pero el fenómeno es el mismo.
 
-1.  Apuntar el `next` del nuevo nodo al `head` actual.
-2.  Actualizar el `head` para que apunte al nuevo nodo.
+```text
+$ ./main.out
+- Cantidad esperada de valores insertados: 50000
+- Cantidad real de valores insertados: 49922
+- Primeros 10 nodos de la lista: 49999 -> 49997 -> 49995 -> 49998 -> 49996 -> 49994 -> 49992 -> 49993 -> 49991 -> 49989 -> ...
+$ ./main.out
+- Cantidad esperada de valores insertados: 50000
+- Cantidad real de valores insertados: 49986
+- Primeros 10 nodos de la lista: 49999 -> 49997 -> 49995 -> 49993 -> 49991 -> 49989 -> 49987 -> 49985 -> 49983 -> 49981 -> ...
+$ ./main.out
+- Cantidad esperada de valores insertados: 50000
+- Cantidad real de valores insertados: 49970
+- Primeros 10 nodos de la lista: 49998 -> 49996 -> 49994 -> 49992 -> 49990 -> 49988 -> 49986 -> 49984 -> 49982 -> 49980 -> ...
+```
 
-Si ocurre un cambio de contexto entre el paso 1 y el 2, un hilo puede sobrescribir el trabajo de otro.
+Cada ejecución pierde una cantidad distinta de nodos, porque el resultado depende de cómo el planificador intercale los hilos. En la primera ejecución, los nodos iniciales muestran ese intercalado: pares e impares alternan por tramos. En una serie adicional de 30 ejecuciones el conteo varió entre `49672` y `50000`, y en **3 de las 30** no se perdió ningún nodo. Con `./main.out 10000` (20 ejecuciones) el conteo varió entre `9660` y `9982`.
 
-### Visualización del Fallo
+Que una ejecución no pierda nodos ocurre cuando, por azar, los hilos nunca coinciden en la sección crítica: solo son dos instrucciones, frente al `malloc` y al resto del ciclo, que ocupan la mayor parte del tiempo. Una ejecución correcta **no demuestra** que el código sea correcto: la condición de carrera sigue presente aunque no se manifieste.
 
-El siguiente diagrama muestra el estado final de la memoria después de que el **Hilo 1** y el **Hilo 2** intentan insertar simultáneamente.
+## Advertencia de concurrencia: condición de carrera
 
-  * El **Hilo 2** (H2) insertó el `Nodo C` correctamente primero (en su propia visión del tiempo).
-  * El **Hilo 1** (H1) sobrescribió el puntero `HEAD` apuntando al `Nodo B`, ignorando el trabajo de H2.
+**Esta implementación no es segura para hilos (*not thread-safe*).**
 
-<!-- end list -->
+Con un solo hilo, la lista funciona correctamente. Cuando varios hilos invocan `List_Insert` de forma concurrente sobre la misma lista, se produce una condición de carrera en estas dos instrucciones:
+
+```c
+new->next = L->head;   // (1) leer head y enlazar el nodo nuevo
+L->head = new;         // (2) escribir head
+```
+
+El par (1)–(2) no es atómico. Si un hilo es interrumpido entre (1) y (2), y otro hilo completa su propia inserción en ese intervalo, el primero sobrescribe `head` con un valor calculado a partir de una lectura ya desactualizada.
+
+### Intercalado que produce el fallo
+
+Se parte de una lista que contiene solo el nodo `A`. El hilo 1 intenta insertar el nodo `B` y el hilo 2 el nodo `C`:
 
 ```mermaid
+sequenceDiagram
+    participant H1 as Hilo 1 (inserta B)
+    participant M as L->head
+    participant H2 as Hilo 2 (inserta C)
+    Note over M: head = A
+    H1->>M: (1) lee head = A
+    Note over H1: B->next = A
+    Note over H1,H2: cambio de contexto
+    H2->>M: (1) lee head = A
+    Note over H2: C->next = A
+    H2->>M: (2) head = C
+    Note over M: head = C (C -> A)
+    Note over H1,H2: cambio de contexto
+    H1->>M: (2) head = B
+    Note over M: head = B (B -> A)<br/>C quedó fuera de la lista
+```
+
+### Estado final de la memoria
+
+```mermaid
+%%{init: {"themeVariables": {"fontFamily": "Arial, Helvetica, sans-serif"}}}%%
 graph LR
-    subgraph Estado_Corrupto
-        HEAD{HEAD} -->|Sobreescrito por H1| B(Nodo B: Hilo 1)
-        B --> A(Nodo A: Inicial)
-        
-        C(Nodo C: Hilo 2) -->|next| A
+    subgraph Estado_corrupto["Estado corrupto"]
+        HEAD{"head"} -->|"sobrescrito<br/>por el hilo 1"| B("Nodo B<br/>(hilo 1)")
+        B -->|next| A("Nodo A<br/>(inicial)")
+        C("Nodo C<br/>(hilo 2)") -->|next| A
     end
 
     classDef lost fill:#ffcccc,stroke:#ff0000,stroke-width:2px,stroke-dasharray: 5 5;
     class C lost;
-    
-    linkStyle 3 stroke:#ff0000,stroke-width:3px;
+
+    linkStyle 2 stroke:#ff0000,stroke-width:3px;
 ```
 
-> **Resultado:** El **[Nodo C]** (en rojo) se ha perdido en la memoria (**Memory Leak**) y no forma parte de la lista, aunque el Hilo 2 cree que lo insertó correctamente.
+**Resultado:** el nodo `C` (en rojo) no es alcanzable desde `head`. Su inserción se perdió, aunque el hilo 2 completó `List_Insert` sin error, y la memoria que ocupa ya no puede liberarse (fuga de memoria, *memory leak*). Cada vez que este intercalado ocurre se pierde un valor, lo que explica que el conteo final sea menor que `END_VALUE`.
 
-### Solución
+## Solución
 
-Para entornos concurrentes, utilice la versión ubicada en la carpeta [con_locks](../con_locks/) que implementa `pthread_mutex_t` para garantizar la exclusión mutua.
+La versión de la carpeta [`con_locks/`](../con_locks/) protege la sección crítica con un `pthread_mutex_t`, de modo que solo un hilo a la vez puede leer y actualizar `head`. Con esa versión, el conteo coincide con el valor esperado en todas las ejecuciones. Ejecución de referencia en la misma máquina:
 
-> [!note]
-> **Nota sobre IA**: Este contenido fue elaborado y estructurado con la asistencia de un modelo de inteligencia artificial. 
+```text
+$ ./main.out
+- Cantidad esperada de valores insertados: 50000
+- Cantidad real de valores insertados: 50000
+- Primeros 10 nodos de la lista: 49999 -> 49997 -> 49995 -> 49993 -> 49991 -> 49989 -> 49987 -> 49985 -> 49983 -> 49981 -> ...
+```
 
-> [!warning]
-> **Aclaración**: Como todo código (especialmente los ejemplos didácticos diseñados pueden fallar (o de hecho fallan)), el contenido debe ser revisado críticamente y puede contener errores.
+> **Referencia teórica:** [OSTEP, cap. 29: *Lock-based Concurrent Data Structures*](https://pages.cs.wisc.edu/~remzi/OSTEP/threads-locks-usage.pdf), sección 29.2 (*Concurrent Linked Lists*).
+
+> [!NOTE]
+> **Nota sobre IA:** este contenido fue elaborado y estructurado con la asistencia de un modelo de inteligencia artificial.
+
+> [!WARNING]
+> **Aclaración:** como todo código, en especial los ejemplos didácticos, este puede contener errores y debe revisarse de forma crítica.
