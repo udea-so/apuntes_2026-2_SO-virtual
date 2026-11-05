@@ -4,23 +4,23 @@ SRCS = linked_list.c main.c
 TARG = main.out
 # specify compiler, compile flags, and needed libs
 CC = gcc
-OPTS = -Wall -O4 -g
-LIBS = -lm -lpthread
+OPTS = -Wall -O2 -g -pthread
+LIBS = -pthread
 
-# this translates .c files in src list to .o’s
+# this translates .c files in src list to .o's
 OBJS = $(SRCS:.c=.o)
 
-# all is not really needed, but is used to generate the target
+.PHONY: all clean
+
 all: $(TARG)
 
 # this generates the target executable
 $(TARG): $(OBJS)
 	$(CC) -o $(TARG) $(OBJS) $(LIBS)
 
-# this is a generic rule for .o files
-%.o: %.c
+# generic rule for .o files (also rebuilt when the header changes)
+%.o: %.c linked_list.h
 	$(CC) $(OPTS) -c $< -o $@
-# and finally, a clean line
 
 clean:
 	rm -f $(OBJS) $(TARG)

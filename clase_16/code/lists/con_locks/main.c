@@ -1,16 +1,16 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <assert.h>
-#include <string.h>
-#include <sys/time.h>
+#include <pthread.h>
 #include "linked_list.h"
 
 
-int END_VALUE = 50000;
+int END_VALUE = 50000;  // valor por defecto; se puede cambiar con el primer argumento
 list_t L;
 
 void* my_thread1(void* arg){
-  // Insersion de numeros pares
-  int num = 0;
+  // Insercion de numeros pares
+  int num;
   for (num = 0; num < END_VALUE; num += 2){
     List_Insert(&L, num);
   }
@@ -18,7 +18,7 @@ void* my_thread1(void* arg){
 }
 
 void* my_thread2(void* arg){
-  // Insersion de numeros impares
+  // Insercion de numeros impares
   int num;
   for (num = 1; num < END_VALUE; num += 2){
     List_Insert(&L, num);
@@ -27,10 +27,19 @@ void* my_thread2(void* arg){
 }
 
 
-int main() {
+int main(int argc, char *argv[]) {
 
   int rc;
   int i;
+
+  // Uso: ./main.out [END_VALUE]
+  if (argc > 1) {
+    END_VALUE = atoi(argv[1]);
+    if (END_VALUE <= 0) {
+      fprintf(stderr, "uso: %s [END_VALUE > 0]\n", argv[0]);
+      return 1;
+    }
+  }
 
   // Inicializacion de la lista
   List_Init(&L);
@@ -39,17 +48,17 @@ int main() {
   // Creacion de los hilos
   rc = pthread_create(&thread1, NULL, my_thread1, NULL); // Hilo que inserta numeros pares
   assert(rc == 0);
-  rc = pthread_create(&thread2, NULL, my_thread2, NULL); // Hilo que inserta numero impares
+  rc = pthread_create(&thread2, NULL, my_thread2, NULL); // Hilo que inserta numeros impares
   assert(rc == 0);
-  
+
   // Espera de la terminacion de los hilos hijos
   pthread_join(thread1, NULL);
   pthread_join(thread2, NULL);
 
-  // El hilo principal verificara que se hayan agregado todos lo elementos
+  // El hilo principal verifica que se hayan agregado todos los elementos
   int cnt = 0;
 
-  for(i = 0; i < END_VALUE;i++) {
+  for(i = 0; i < END_VALUE; i++) {
     if(List_Lookup(&L, i) == 0) {
       // Numero encontrado
       cnt++;
@@ -57,18 +66,17 @@ int main() {
   }
 
   // Resumen de los resultados
-  printf("- Cantidad esperada de valores insertados: %d\n",END_VALUE);
-  printf("- Cantidad real de valores insertados: %d\n",cnt);
+  printf("- Cantidad esperada de valores insertados: %d\n", END_VALUE);
+  printf("- Cantidad real de valores insertados: %d\n", cnt);
 
-  // imprimir lista completa
+  // Primeros nodos de la lista (los ultimos insertados)
   node_t *curr = L.head;
-  printf("Lista completa:\n");
-  while (curr)
-  {
-      printf("%d -> ", curr->key);
-      curr = curr->next;
+  printf("- Primeros 10 nodos de la lista: ");
+  for (i = 0; i < 10 && curr; i++) {
+    printf("%d -> ", curr->key);
+    curr = curr->next;
   }
-  printf("NULL\n");
+  printf(curr ? "...\n" : "NULL\n");
 
   /*
   // Test del funcionamiento basico
@@ -82,10 +90,6 @@ int main() {
   printf("3 in L? %d\n",found);
   found = List_Lookup(&L, 5);
   printf("3 in L? %d\n",found);
-  */ 
+  */
   return 0;
 }
-
-
-
-
