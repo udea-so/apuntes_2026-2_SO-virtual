@@ -65,11 +65,11 @@ __pycache__/
 # Checkpoints de Jupyter
 .ipynb_checkpoints/
 
-# Ejecutables ELF sin extensión de clase_16/code/counters/ (traídos del
+# Ejecutables ELF sin extensión de clase_16/ejemplos/counters/ (traídos del
 # semestre pasado o generados al compilar): se ignora todo archivo sin punto
 # en el nombre, salvo los Makefile
-clase_16/code/counters/**/*
-!clase_16/code/counters/**/
-!clase_16/code/counters/**/*.*
-!clase_16/code/counters/**/Makefile
-clase_16/code/counters/**/.ipynb_checkpoints/
+clase_16/ejemplos/counters/**/*
+!clase_16/ejemplos/counters/**/
+!clase_16/ejemplos/counters/**/*.*
+!clase_16/ejemplos/counters/**/Makefile
+clase_16/ejemplos/counters/**/.ipynb_checkpoints/
