@@ -1,3 +1,7 @@
+/*
+ * my_lock.h - Interfaz del lock implementado con un semáforo
+ *             (diapositivas p. 18-19).
+ */
 #ifndef __MY_LOCK_H__
 #define __MY_LOCK_H__
 

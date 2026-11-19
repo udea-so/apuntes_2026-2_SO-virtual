@@ -1,26 +1,18 @@
-CC     := gcc
-CFLAGS := -Wall -Werror -pthread
+# Semáforo binario como lock (diapositivas p. 13-17)
+CC      = gcc
+CFLAGS  = -Wall -I. -pthread
+HEADERS = common.h common_threads.h
 
-OS     := $(shell uname -s)
-LIBS   := 
-ifeq ($(OS),Linux)
-	LIBS += -pthread
-endif
+.PHONY: all clean
 
-SRCS   := binary.c 
-		  		  
-OBJS   := ${SRCS:c=o}
-PROGS  := ${SRCS:.c=}
+all: binary.out binary-sin-semaforo.out
 
-.PHONY: all
-all: ${PROGS}
-	rm -f ${OBJS}
+binary.out: binary.c $(HEADERS)
+	$(CC) $(CFLAGS) -o $@ $<
 
-${PROGS} : % : %.o Makefile
-	${CC} $< -o $@ ${LIBS}
+# Variante sin sem_wait()/sem_post(): muestra la condición de carrera
+binary-sin-semaforo.out: binary.c $(HEADERS)
+	$(CC) $(CFLAGS) -DSIN_SEMAFORO -o $@ $<
 
 clean:
-	rm -f ${PROGS} ${OBJS}
-
-%.o: %.c Makefile
-	${CC} ${CFLAGS} -c $<
+	rm -f *.out *.o

@@ -1,27 +1,19 @@
-CC     := gcc
-CFLAGS := -Wall -Werror -pthread
+# Lock implementado con un semáforo (diapositivas p. 18-20)
+CC      = gcc
+CFLAGS  = -Wall -I. -pthread
+HEADERS = common.h common_threads.h
 
-# Detectar sistema operativo
-OS     := $(shell uname -s)
-LIBS   := 
-ifeq ($(OS),Linux)
-	LIBS += -pthread
-endif
+.PHONY: all clean
 
-# Objetivo por defecto
-all: binary
+all: binary.out test_lock.out
 
-# 1. Linkeo final: une binary.o y my_lock.o
-binary: binary.o my_lock.o
-	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
+# binary.c usa el lock_t de my_lock.c (p. 19)
+binary.out: binary.c my_lock.c my_lock.h $(HEADERS)
+	$(CC) $(CFLAGS) -o $@ binary.c my_lock.c
 
-# 2. Compila el main (depende de common headers y my_lock.h)
-binary.o: binary.c my_lock.h common_threads.h common.h
-	$(CC) $(CFLAGS) -c binary.c
-
-# 3. Compila la implementación del lock
-my_lock.o: my_lock.c my_lock.h common_threads.h
-	$(CC) $(CFLAGS) -c my_lock.c
+# Código de test de la p. 20
+test_lock.out: test_lock.c $(HEADERS)
+	$(CC) $(CFLAGS) -o $@ $<
 
 clean:
-	rm -f binary *.o
+	rm -f *.out *.o

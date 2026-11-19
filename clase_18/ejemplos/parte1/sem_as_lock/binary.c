@@ -1,3 +1,13 @@
+/*
+ * binary.c - Contador compartido protegido con el lock_t implementado con
+ *            un semáforo en my_lock.c (diapositivas p. 18-19).
+ *
+ * Es el mismo programa de diapositivas/binary_sem/binary.c, pero en lugar
+ * de llamar directamente a sem_wait()/sem_post() usa las funciones
+ * init(), acquire() y release() de la interfaz de lock de la p. 19.
+ *
+ * Uso:         ./binary.out
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include "common.h"         // Para GetTime, Spin (si se necesitan)
@@ -15,9 +25,9 @@ void *child(void *arg) {
     for (i = 0; i < 10000000; i++) {
         // Entrada a Sección Crítica
         acquire(&mutex);
-        
-        counter++; 
-        
+
+        counter++;
+
         // Salida de Sección Crítica
         release(&mutex);
     }
@@ -30,7 +40,7 @@ int main(int argc, char *argv[]) {
 
     pthread_t c1, c2;
 
-    // 2. Creamos los hilos usando tus wrappers
+    // 2. Creamos los hilos usando los wrappers de common_threads.h
     Pthread_create(&c1, NULL, child, NULL);
     Pthread_create(&c2, NULL, child, NULL);
 
@@ -39,6 +49,6 @@ int main(int argc, char *argv[]) {
     Pthread_join(c2, NULL);
 
     printf("result: %d (should be 20000000)\n", counter);
-    
+
     return 0;
 }

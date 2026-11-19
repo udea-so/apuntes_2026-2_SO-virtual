@@ -1,87 +1,179 @@
-# Implementación de un Mutex utilizando Semáforos
+![Built with AI](https://img.shields.io/badge/Built%20with-AI-blue.svg)
 
-Este proyecto demuestra cómo construir un mecanismo de **Exclusión Mutua (Mutex)** utilizando primitivas de **Semáforos POSIX**.
+# Lock implementado con un semáforo
 
-El objetivo principal es resolver el problema de la **Condición de Carrera (Race Condition)** que ocurre cuando dos hilos intentan modificar una variable compartida (`counter`) simultáneamente sin sincronización.
+Las diapositivas p. 18–20 construyen un **lock** con la interfaz de las clases 15 y 16 (`init`, `acquire`, `release`) usando un semáforo, y lo prueban con un contador compartido. Esta carpeta tiene la implementación del lock y dos programas de prueba.
 
-## Estructura del Proyecto
+Volver al [índice de la parte 1](../README.md).
 
-El código está modularizado para separar la lógica del programa de la implementación de la herramienta de sincronización:
+## Relación con las diapositivas y el libro
 
-* **`binary.c`**: Programa principal. Crea dos hilos que incrementan un contador compartido dentro de una sección crítica protegida.
-* **`my_lock.c` / `my_lock.h`**: Librería personalizada. Define la estructura `lock_t` e implementa las operaciones `init`, `acquire` y `release` usando semáforos.
-* **`common_threads.h`**: Contiene "wrappers" (envoltorios) para las llamadas al sistema (como `Pthread_create` o `Sem_wait`), manejando automáticamente los errores con `assert`.
-* **`Makefile`**: Script de compilación automatizada.
+| Programa | Qué muestra | Diapositivas | OSTEP cap. 31 (v1.10) |
+|---|---|---|---|
+| [`my_lock.h`](my_lock.h), [`my_lock.c`](my_lock.c) | `lock_t` con un semáforo: `init`, `acquire`, `release` | p. 18–19 | §31.2 |
+| [`binary.c`](binary.c) → `binary.out` | Dos hilos que toman el lock en **cada** incremento | p. 19 | Fig. 31.3 |
+| [`test_lock.c`](test_lock.c) → `test_lock.out` | "Código de test": `N` hilos que toman el semáforo una vez cada uno | p. 20 | — |
 
-## Cómo Compilar
+## Compilación
 
-Este proyecto incluye un `Makefile` para facilitar la compilación modular.
-
-1.  Abre tu terminal en la carpeta del proyecto.
-2.  Ejecuta el siguiente comando:
+Desde esta carpeta:
 
 ```bash
-make
-```
-Esto generará el ejecutable llamado `binary`.
-
-**Nota**: Si deseas limpiar los archivos generados (`.o` y ejecutables) para recompilar desde cero, ejecuta:
-
-
-```Bash
-make clean
+make          # genera binary.out y test_lock.out
+make clean    # borra los ejecutables
 ```
 
-## Cómo Probar el Funcionamiento
+`binary.out` se arma con dos archivos fuente, el programa y la implementación del lock:
 
-Una vez compilado, ejecuta el programa:
-
-```Bash
-./binary
+```bash
+gcc -Wall -I. -pthread -o binary.out binary.c my_lock.c
+gcc -Wall -I. -pthread -o test_lock.out test_lock.c
 ```
 
-Resultado Esperado
-El programa lanza dos hilos. Cada uno incrementa el contador `10.000.000` de veces. Si el Mutex funciona correctamente, el resultado final debe ser exacto:
+## El lock (p. 18–19)
 
+La p. 18 plantea el ejercicio: con las operaciones del semáforo (`sem_init`, `sem_wait`, `sem_post`), completar la estructura `lock_t` y las funciones `init`, `acquire` y `release`. La solución de la p. 19:
 
+```c
+typedef struct __lock_t {
+    sem_t sem;                  // la diapositiva lo llama value
+} lock_t;
+
+void init(lock_t *lock) {
+    Sem_init(&lock->sem, 1);    // sem_init(&lock->sem, 0, 1): el lock empieza libre
+}
+
+void acquire(lock_t *lock) {
+    Sem_wait(&lock->sem);       // lock
+}
+
+void release(lock_t *lock) {
+    Sem_post(&lock->sem);       // unlock
+}
 ```
+
+Es decir, un lock es un semáforo binario: `acquire` es `sem_wait` y `release` es `sem_post`, sobre un semáforo que empieza en 1.
+
+La p. 18 describe además el semáforo binario como uno con valor **booleano**: `bsem_wait()` espera a que el valor sea 1 y lo pone en 0, y `bsem_signal()` lo pone en 1 y despierta a un hilo. Es el comportamiento que se obtiene con un semáforo general inicializado en 1 cuando cada hilo hace un `sem_wait()` seguido de un `sem_post()`, como en esta carpeta.
+
+## Prueba 1: `binary.c`, el lock en cada incremento
+
+Es el programa de [`diapositivas/binary_sem/`](../diapositivas/binary_sem/README.md) escrito con la interfaz `lock_t`: dos hilos incrementan el contador 10 000 000 de veces cada uno y toman el lock en cada incremento.
+
+```c
+void *child(void *arg) {
+    int i;
+    for (i = 0; i < 10000000; i++) {
+        acquire(&mutex);
+        counter++;
+        release(&mutex);
+    }
+    return NULL;
+}
+```
+
+Salida de referencia:
+
+```text
+$ time ./binary.out
 result: 20000000 (should be 20000000)
+
+real	0m1.227s
+user	0m0.781s
+sys	0m1.563s
 ```
-Si la implementación del lock fuera incorrecta o no existiera, el resultado sería un número menor y aleatorio (ej. `14592301`) debido a las condiciones de carrera.
 
-## Preguntas de Reflexión para el Estudiante
+El resultado fue exacto en 20 de 20 ejecuciones.
 
-Para asegurarte de que has comprendido los conceptos clave, intenta responder estas preguntas antes de mirar el código fuente o después de ejecutarlo:
+## Prueba 2: `test_lock.c`, el código de test (p. 20)
 
-1. **Sobre la Inicialización**: En `my_lock.c`, la función init inicializa el semáforo con el valor `1`.
-   * ¿Qué pasaría si lo inicializaras en `0`?
-   * ¿Podrían los hilos entrar a la sección crítica? ¿Por qué?
-2. **Sobre la Atomicidad**: ¿Por qué es necesario usar `acquire` antes de `counter++`?
-   * ¿Qué sucede a nivel de instrucciones de máquina (ensamblador) cuando se ejecuta `counter++` que lo hace peligroso en entornos concurrentes?
-3. **Semáforos vs. Spinlocks**: En acquire, usamos `Sem_wait`. Si el semáforo está ocupado, el hilo se bloquea (se duerme).
-   * ¿Cuál es la ventaja de este enfoque frente a un bucle `while` (espera activa) que compruebe constantemente una variable?
-4. **Orden de Operaciones**: Si en `binary.c` intercambiamos el orden y ponemos `release(&mutex)` antes de `counter++`:
-   * ¿Seguiría estando protegida la variable compartida?
-   * ¿Qué principio de la exclusión mutua se estaría violando?
+Es el código de la diapositiva p. 20, con las respuestas a sus tres preguntas "*What goes here?*": `sem_wait(&lock)`, `sem_post(&lock)` y el valor inicial 1.
 
-## Resultados de Aprendizaje
+```c
+sem_t lock;
 
-Al finalizar esta práctica, ejecutar el código y responder las preguntas de reflexión, el estudiante será capaz de:
+void *worker(void *arg) {
+    int i;
+    sem_wait(&lock);            // What goes here?
+    for (i = 0; i < 1e6; i++)
+        counter++;
+    sem_post(&lock);            // What goes here?
+    return NULL;
+}
 
-1.  **Implementar Exclusión Mutua con Semáforos:**
-    Comprender cómo un mecanismo generalizado (semáforo) puede restringirse para actuar como un candado binario (mutex), inicializando su valor en **1** y usándolo estrictamente en pares `wait`/`post`.
+int main(int argc, char *argv[]) {
+    int num = atoi(argv[1]);
+    pthread_t pid[PMAX];
+    sem_init(&lock, 0, 1 /* What goes here? */);
+    for (int i = 0; i < num; i++)
+        Pthread_create(&pid[i], 0, worker, 0);
+    for (int i = 0; i < num; i++)
+        Pthread_join(pid[i], NULL);
+    printf("counter: %d\n", counter);
+    return 0;
+}
+```
 
-2.  **Identificar y Proteger Secciones Críticas:**
-    Reconocer las líneas de código donde ocurre el acceso concurrente a recursos compartidos (la variable `counter`) y aplicar la protección necesaria para evitar la corrupción de datos.
+La diapositiva no muestra la declaración de `counter` ni de `PMAX`; en el programa, `counter` es un `volatile int` global y `PMAX` vale 32. El número de hilos es obligatorio:
 
-3.  **Analizar el Impacto de las Condiciones de Carrera:**
-    Evidenciar experimentalmente cómo la falta de sincronización destruye el determinismo de un programa (obteniendo resultados aleatorios) y cómo el uso correcto del *lock* restaura la consistencia (obteniendo siempre `20000000`).
+```bash
+./test_lock.out <num> [valor_inicial]
+```
 
-4.  **Aplicar Modularidad en C:**
-    Entender la importancia de desacoplar la lógica de negocio (`binary.c`) de la implementación de bajo nivel (`my_lock.c`), utilizando archivos de cabecera (`.h`) para definir interfaces claras.
+Salida de referencia:
 
-5.  **Manejar APIs POSIX:**
-    Familiarizarse con las llamadas al sistema estándar para hilos y semáforos en Linux (`pthread_create`, `sem_init`, `sem_wait`, `sem_post`), así como el uso de *wrappers* para un manejo robusto de errores.
+```text
+$ time ./test_lock.out 4
+counter: 4000000
 
-> [!Note]
-> **AI Disclosure:** This document was created with the assistance of Artificial Intelligence language models. The content has been reviewed, edited, and validated by a human author to ensure accuracy and quality.
+real	0m0.027s
+user	0m0.016s
+sys	0m0.000s
+```
+
+| Ejecución | Resultado | `real` |
+|---|---|---|
+| `./test_lock.out 1` | 1 000 000 | 0.017 s |
+| `./test_lock.out 2` | 2 000 000 | 0.021 s |
+| `./test_lock.out 4` | 4 000 000 (exacto en 20 de 20 ejecuciones) | 0.027 s |
+| `./test_lock.out 8` | 8 000 000 | 0.040 s |
+
+### Grano grueso frente a grano fino
+
+`test_lock.c` toma el semáforo **una vez por hilo**, alrededor de todo el ciclo: es un lock de **grano grueso**. Un hilo hace su millón de incrementos sin interrupciones de los demás, y los hilos pasan por la sección crítica uno detrás de otro. `binary.c`, en cambio, toma el lock en **cada** incremento (**grano fino**). Los dos programas son correctos, pero `test_lock.out 8` hizo 8 millones de incrementos en 0.04 s, mientras que `binary.out` necesitó 1.2 s para 20 millones: casi todo ese tiempo se fue en los 20 millones de pares `sem_wait()`/`sem_post()` y en dormir y despertar hilos. Es el compromiso entre granularidad y concurrencia de la clase 15: con grano grueso hay menos costo de sincronización, pero ningún paralelismo dentro de la sección crítica.
+
+### ¿Cuál debe ser el valor inicial? (p. 13)
+
+El segundo argumento, opcional, cambia el valor inicial del semáforo:
+
+| Valor inicial | Qué pasa | Ejecución de referencia |
+|---|---|---|
+| **1** (correcto) | Un solo hilo a la vez en la sección crítica | `./test_lock.out 4` → 4 000 000 |
+| **0** | Ningún hilo puede pasar `sem_wait()`: todos quedan bloqueados y el programa no termina | `timeout 2 ./test_lock.out 4 0` → código de salida 124 (lo terminó `timeout`) |
+| **2** | Dos hilos entran a la vez a la sección crítica y se pierden incrementos | `./test_lock.out 4 2` → entre 2 037 004 y 2 525 800 en 20 ejecuciones (esperado: 4 000 000) |
+| **4** | Los cuatro hilos entran a la vez | `./test_lock.out 4 4` → entre 1 093 797 y 1 519 003 en 20 ejecuciones |
+
+Con un valor inicial `N`, el semáforo deja pasar hasta `N` hilos a la vez: es un **semáforo general** (*counting semaphore*, p. 12), útil para administrar un recurso con `N` unidades, pero no para la exclusión mutua.
+
+```text
+$ timeout 2 ./test_lock.out 4 0; echo $?
+124
+
+$ ./test_lock.out 2 2
+counter: 1113429
+```
+
+## Para probar por cuenta propia
+
+1. ¿Qué pasa si `release()` se llama antes de `counter++` en `binary.c`? ¿Y si un hilo llama a `release()` dos veces seguidas?
+2. Cambiar `test_lock.c` para que el semáforo se tome dentro del ciclo, en cada incremento, y medir con `time` las ejecuciones con 1, 2, 4 y 8 hilos. Comparar con la tabla de arriba.
+3. Un `sem_wait()` sobre un semáforo ocupado duerme al hilo, mientras que un spinlock (clase 15) gira hasta que el lock se libera. ¿En qué situación podría convenir el spinlock?
+
+## Referencias
+
+- Diapositivas de la clase 18, parte 1, p. 12–13 y 18–20.
+- R. H. Arpaci-Dusseau y A. C. Arpaci-Dusseau, *Operating Systems: Three Easy Pieces*, v1.10, cap. 31: [*Semaphores*](https://pages.cs.wisc.edu/~remzi/OSTEP/threads-sema.pdf), §31.2.
+- `man sem_init`, `man sem_wait`, `man sem_post`.
+
+> [!IMPORTANT]
+> **Sobre esta guía.** El código y la guía se elaboraron con asistencia de un modelo de inteligencia artificial y se revisaron contra las diapositivas de la clase y OSTEP. Las salidas son de una ejecución de referencia del 19/11/2026 en la máquina descrita en el [entorno de ejecución](../../../../clase_14/ejemplos/entorno_ejecucion.md) de la clase 14; en otra máquina los números concretos cambian. Si se encuentra alguna diferencia con lo visto en clase, prevalece lo explicado por el docente.

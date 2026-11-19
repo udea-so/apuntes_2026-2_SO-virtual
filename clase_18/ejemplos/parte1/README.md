@@ -1,85 +1,50 @@
-# Ejemplos de Sincronización — Clase 19
+![Built with AI](https://img.shields.io/badge/Built%20with-AI-blue.svg)
 
-Este directorio contiene los ejemplos desarrollados para ilustrar el uso de semáforos y otros mecanismos de sincronización en el contexto del curso de **Sistemas Operativos (SO)**.  
+# Ejemplos — Clase 18, parte 1: semáforos como locks y para ordenar hilos
 
-Los programas están organizados en subdirectorios según el propósito didáctico de cada conjunto de ejemplos: desde casos simples usados en presentaciones hasta implementaciones más completas de semáforos como *locks* y como *variables de condición*.
+Ejemplos en C del uso de **semáforos** POSIX (`sem_init`, `sem_wait`, `sem_post`), basados en las diapositivas de la parte 1 de la clase 18 y en el capítulo 31 de *Operating Systems: Three Easy Pieces* (OSTEP, v1.10), *Semaphores*. Cada carpeta tiene un `README.md` con la explicación del código, el procedimiento de prueba y las salidas de una ejecución de referencia.
 
-El objetivo es permitir al estudiante **ejecutar y observar el comportamiento real** de estos mecanismos, facilitando la comprensión de los conceptos teóricos vistos en clase.
+Un semáforo es un objeto con un valor entero y dos operaciones: `sem_wait()` (también `P` o *down*) y `sem_post()` (`V` o *up*). Con él se pueden resolver los dos objetivos de la concurrencia vistos hasta ahora: la **exclusión mutua**, que en las clases 15 y 16 se resolvió con locks, y el **orden de ejecución**, que en la clase 17 se resolvió con variables de condición. La diferencia está en el **valor inicial** del semáforo.
 
-## Estructura general del directorio `code/`
+Volver al [índice de ejemplos de la clase 18](../README.md).
 
-A continuación, se presenta un resumen del contenido y finalidad de cada subdirectorio incluido en `code/`.
+| Carpeta | Contenido | Valor inicial | Diapositivas | OSTEP cap. 31 |
+|---|---|---|---|---|
+| [`diapositivas/binary_sem/`](diapositivas/binary_sem/README.md) | Semáforo binario como lock: dos hilos incrementan un contador. Incluye la variante sin semáforo. | 1 | p. 13–17 | §31.2, Figs. 31.3–31.5 |
+| [`sem_as_lock/`](sem_as_lock/README.md) | Lock (`init`, `acquire`, `release`) implementado con un semáforo, y el "código de test" de la p. 20, que permite probar otros valores iniciales. | 1 | p. 18–20 | §31.2 |
+| [`diapositivas/ordering_sem/`](diapositivas/ordering_sem/README.md) | El padre espera al hijo (*join*) con un semáforo. Incluye una traza del valor del semáforo. | 0 | p. 21–26 | §31.3, Figs. 31.6–31.8 |
+| [`sem_as_cv/`](sem_as_cv/README.md) | El mismo *join*, con el semáforo encapsulado en una interfaz `my_cv`; compara el semáforo con una variable de condición. No está en las diapositivas. | 0 | — | §31.3 y §31.8 |
 
----
+## Ruta sugerida
 
-## 1. `diapositivas/`
+```mermaid
+%%{init: {"themeVariables": {"fontFamily": "Arial, Helvetica, sans-serif"}}}%%
+flowchart TD
+    A["Semáforo en 1<br/>como lock<br/>binary_sem"] --> B["Lock con la interfaz<br/>init / acquire / release<br/>sem_as_lock"]
+    B --> C["Código de test (p. 20)<br/>y otros valores iniciales<br/>test_lock"]
+    C --> D["Semáforo en 0<br/>para ordenar hilos<br/>ordering_sem"]
+    D --> E["Semáforo frente a<br/>variable de condición<br/>sem_as_cv"]
+```
 
-Contiene el código utilizado directamente en las diapositivas de clase. Los ejemplos son deliberadamente simples y se centran en demostrar conceptos puntuales de sincronización usando semáforos.
+## Requisitos
 
----
+Linux (nativo, WSL, máquina virtual o contenedor) con `gcc` y `make`. Cada carpeta tiene un `Makefile` que compila sus programas (`make`) y borra los ejecutables (`make clean`); los ejecutables usan la extensión `.out` y no se suben al repositorio.
 
-### 1.1. `diapositivas/binary_sem/`
+Todas las carpetas incluyen una copia de dos cabeceras de OSTEP: [`common.h`](diapositivas/binary_sem/common.h), con funciones de tiempo, y [`common_threads.h`](diapositivas/binary_sem/common_threads.h), con envolturas que verifican con `assert` que cada llamada de la API de hilos no falle. En particular, `Sem_init(&s, valor)` equivale a `sem_init(&s, 0, valor)`: el `0` indica que el semáforo se comparte entre los hilos de un mismo proceso (p. 8). Las cuatro copias de cada cabecera son idénticas y deben mantenerse así.
 
-Ejemplos que ilustran el uso básico de **semáforos binarios**.
+Las salidas de las guías se obtuvieron el 19/11/2026 en la máquina descrita en el [entorno de ejecución](../../../clase_14/ejemplos/entorno_ejecucion.md) de la clase 14 (WSL1 sobre Windows 10, 8 CPU lógicas). En otra máquina los números cambian, pero no qué programa da el resultado correcto.
 
-**Finalidad:**
-- Mostrar cómo un semáforo binario controla el acceso a una sección crítica.
-- Introducir el patrón clásico `wait()` / `signal()`.
-- Comparar la ejecución con y sin semáforo para evidenciar condiciones de carrera.
+Uno de los ensayos de [`sem_as_lock/`](sem_as_lock/README.md) (un semáforo inicializado en 0) no termina nunca, a propósito. Para probarlo sin tener que interrumpirlo con `Ctrl+C` se usa `timeout`, que lo termina después de unos segundos y deja el código de salida 124:
 
----
+```bash
+timeout 2 ./test_lock.out 4 0; echo $?
+```
 
-### 1.2. `diapositivas/ordering_sem/`
+## Referencias
 
-Ejemplos diseñados para demostrar cómo los semáforos pueden usarse para **forzar un orden específico** entre hilos.
+- R. H. Arpaci-Dusseau y A. C. Arpaci-Dusseau, *Operating Systems: Three Easy Pieces*, v1.10, cap. 31: [*Semaphores*](https://pages.cs.wisc.edu/~remzi/OSTEP/threads-sema.pdf).
+- Código del capítulo en [`ostep-code/threads-sema`](https://github.com/remzi-arpacidusseau/ostep-code/tree/master/threads-sema).
+- Páginas de manual: `man sem_overview`, `man sem_init`, `man sem_wait`, `man sem_post`.
 
-**Finalidad:**
-- Establecer dependencias de ejecución (“A debe ejecutarse antes de B”).
-- Mostrar sincronización que no se relaciona con exclusión mutua.
-- Introducir el concepto de *ordering constraints* en concurrencia.
-
----
-
-## 2. `sem_as_lock/`
-
-Ejemplos donde un semáforo se utiliza para implementar el comportamiento de un **mutex (lock)**.
-
-**Finalidad:**
-- Comparar semáforos .vs. locks nativos.
-- Demostrar cómo un semáforo inicializado en 1 puede actuar como mecanismo de exclusión mutua.
-- Permitir al estudiante observar:
-  - Condiciones de carrera sin protección.
-  - Corrección al usar un semáforo como lock.
-  - Cambios en el comportamiento cuando aumenta el número de hilos.
-
-> Nota: Aunque funcional, usar semáforos como locks **no es el patrón recomendado** cuando existen primitivas específicas para exclusión mutua.
-
----
-
-## 3. `sem_as_cv/`
-
-Ejemplos donde un semáforo se utiliza para emular el comportamiento de una **variable de condición (condition variable)**.
-
-**Finalidad:**
-- Enseñar cómo funcionan las operaciones `wait()` y `signal()` en las variables de condición.
-- Mostrar cómo simular “esperar una condición” usando únicamente semáforos.
-- Ilustrar casos como productor/consumidor mediante la emulación manual de la semántica de CV.
-
-Estos ejemplos permiten observar:
-- El desbloqueo del lock antes de dormir.
-- La señalización que despierta exactamente un hilo.
-- La complejidad de implementar CVs sin soporte nativo.
-
----
-
-## ¿Cómo usar estos ejemplos?
-
-1. Compile cada archivo con `gcc` (o el compilador indicado en cada ejemplo).
-2. Ejecute los binarios varias veces para observar:
-   - Condiciones de carrera.
-   - Cambios en el orden de ejecución.
-   - Efectos del bloqueo/sincronización.
-3. Modifique parámetros como número de hilos o tiempos de espera para analizar el comportamiento.
-
-> [!Note]
-> **AI Disclosure:** This document was created with the assistance of Artificial Intelligence language models. The content has been reviewed, edited, and validated by a human author to ensure accuracy and quality. This document may contain errors.
+> [!IMPORTANT]
+> **Sobre estas guías.** El código y las guías se elaboraron con asistencia de un modelo de inteligencia artificial y se revisaron contra las diapositivas de la clase y OSTEP; todos los programas se compilaron y ejecutaron para obtener las salidas de referencia. Si se encuentra alguna diferencia con lo visto en clase, prevalece lo explicado por el docente; se agradece reportarla en los foros del curso.

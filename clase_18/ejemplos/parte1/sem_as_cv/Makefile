@@ -1,31 +1,14 @@
-CC     := gcc
-CFLAGS := -Wall -Werror -pthread
-
-# Detección del Sistema Operativo (Mantenemos tu lógica original)
-OS     := $(shell uname -s)
-LIBS   := 
-ifeq ($(OS),Linux)
-	LIBS += -pthread
-endif
-
-# Nombre del ejecutable final
-TARGET := sem_as_CV
-
-# Lista de objetos necesarios (Main + tu librería)
-OBJS   := sem_as_CV.o my_cv.o
+# Señalización padre-hijo con la interfaz my_cv (semáforo en 0)
+CC      = gcc
+CFLAGS  = -Wall -I. -pthread
+HEADERS = common.h common_threads.h
 
 .PHONY: all clean
 
-all: $(TARGET)
+all: sem_as_CV.out
 
-# Regla de Linkeo: Junta todos los .o para crear el ejecutable
-$(TARGET): $(OBJS) Makefile
-	$(CC) $(CFLAGS) -o $@ $(OBJS) $(LIBS)
-
-# Regla de Compilación: Convierte cada .c en .o
-# Agregamos los headers como dependencias para recompilar si cambian
-%.o: %.c my_cv.h common_threads.h common.h Makefile
-	$(CC) $(CFLAGS) -c $< -o $@
+sem_as_CV.out: sem_as_CV.c my_cv.c my_cv.h $(HEADERS)
+	$(CC) $(CFLAGS) -o $@ sem_as_CV.c my_cv.c
 
 clean:
-	rm -f $(TARGET) $(OBJS)
+	rm -f *.out *.o

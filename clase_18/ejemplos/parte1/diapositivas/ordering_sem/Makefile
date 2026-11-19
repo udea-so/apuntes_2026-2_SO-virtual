@@ -1,26 +1,20 @@
-CC     := gcc
-CFLAGS := -Wall -Werror -pthread
+# Semáforo para ordenar la ejecución: el padre espera al hijo (diapositivas p. 21-26)
+CC      = gcc
+CFLAGS  = -Wall -I. -pthread
+HEADERS = common.h common_threads.h
 
-OS     := $(shell uname -s)
-LIBS   := 
-ifeq ($(OS),Linux)
-	LIBS += -pthread
-endif
+.PHONY: all traza clean
 
-SRCS   := sem_as_CV.c 
-		  		  
-OBJS   := ${SRCS:c=o}
-PROGS  := ${SRCS:.c=}
+all: sem_as_CV.out
 
-.PHONY: all
-all: ${PROGS}
-	rm -f ${OBJS}
+sem_as_CV.out: sem_as_CV.c $(HEADERS)
+	$(CC) $(CFLAGS) -o $@ $<
 
-${PROGS} : % : %.o Makefile
-	${CC} $< -o $@ ${LIBS}
+# Variante que imprime el valor del semáforo (sem_getvalue) en cada paso
+traza: sem_as_CV-traza.out
+
+sem_as_CV-traza.out: sem_as_CV.c $(HEADERS)
+	$(CC) $(CFLAGS) -DTRAZA -o $@ $<
 
 clean:
-	rm -f ${PROGS} ${OBJS}
-
-%.o: %.c Makefile
-	${CC} ${CFLAGS} -c $<
+	rm -f *.out *.o

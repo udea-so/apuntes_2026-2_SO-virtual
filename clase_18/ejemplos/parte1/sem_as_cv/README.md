@@ -1,91 +1,113 @@
-# Implementación de una Variable de Condición (Signaling) utilizando Semáforos
+![Built with AI](https://img.shields.io/badge/Built%20with-AI-blue.svg)
 
-Este proyecto demuestra cómo construir un mecanismo de **Señalización (Signaling)** —similar a una Variable de Condición simplificada— utilizando primitivas de **Semáforos POSIX**.
+# Señalización padre-hijo con la interfaz `my_cv`
 
-El objetivo principal es resolver el problema de la **Coordinación de Hilos (Ordering)**, asegurando que un proceso (el padre) espere pasivamente a que otro proceso (el hijo) complete su tarea antes de continuar, evitando el uso ineficiente de ciclos de CPU (espera activa).
+Este ejemplo es el mismo *join* de [`diapositivas/ordering_sem/`](../diapositivas/ordering_sem/README.md) (diapositivas p. 21–26), reorganizado: el semáforo queda oculto detrás de una pequeña interfaz, `my_cv`, con tres funciones (`my_cv_init`, `my_cv_wait`, `my_cv_signal`), y se le pasa al hijo como argumento en lugar de usar una variable global. **No aparece en las diapositivas**; sirve para ver el semáforo usado como herramienta de señalización dentro de un módulo propio y para discutir en qué se diferencia de una variable de condición.
 
-## Estructura del Proyecto
+Volver al [índice de la parte 1](../README.md).
 
-El código está modularizado para separar la lógica del programa de la implementación de la herramienta de sincronización:
+## Archivos
 
-* **`sem_as_CV.c`**: Programa principal. Crea un hilo "hijo" y utiliza la estructura `my_cv` para que el hilo principal ("padre") espere hasta que el hijo termine.
-* **`my_cv.c` / `my_cv.h`**: Librería personalizada. Define la estructura `my_cv` e implementa las operaciones `init`, `wait` (esperar señal) y `signal` (enviar señal) usando semáforos.
-* **`common_threads.h`**: Contiene "wrappers" (envoltorios) para las llamadas al sistema (como `Pthread_create`, `Sem_wait` o `Sem_post`), manejando automáticamente los errores con `assert`.
-* **`Makefile`**: Script de compilación automatizada que vincula los módulos objetos.
+| Archivo | Contenido |
+|---|---|
+| [`my_cv.h`](my_cv.h), [`my_cv.c`](my_cv.c) | La interfaz `my_cv`: un semáforo inicializado en 0 |
+| [`sem_as_CV.c`](sem_as_CV.c) | El padre crea al hijo y espera su señal con `my_cv_wait()` |
 
-## Cómo Compilar
-
-Este proyecto incluye un `Makefile` para facilitar la compilación modular.
-
-1.  Abre tu terminal en la carpeta del proyecto.
-2.  Ejecuta el siguiente comando:
+## Compilación
 
 ```bash
-make
-````
-
-Esto compilará los módulos y generará el ejecutable llamado `sem_as_CV`.
-
-**Nota**: Si deseas limpiar los archivos generados (`.o` y ejecutables) para recompilar desde cero, ejecuta:
-
-```bash
-make clean
+make          # genera sem_as_CV.out (a partir de sem_as_CV.c y my_cv.c)
+make clean    # borra los ejecutables
 ```
 
-## Cómo Probar el Funcionamiento
+## El código
 
-Una vez compilado, ejecuta el programa:
+```c
+typedef struct {
+    sem_t sem;
+} my_cv;
 
-```bash
-./sem_as_CV
+void my_cv_init(my_cv *cv)   { Sem_init(&cv->sem, 0); }   // semáforo en 0
+void my_cv_wait(my_cv *cv)   { Sem_wait(&cv->sem); }
+void my_cv_signal(my_cv *cv) { Sem_post(&cv->sem); }
 ```
 
-### Resultado Esperado
+```c
+void *child(void *arg) {
+    my_cv *cv = (my_cv *)arg;     // la "variable de condición" llega como argumento
+    printf("child\n");
+    my_cv_signal(cv);
+    return NULL;
+}
 
-El programa debe mostrar una secuencia estricta donde el padre espera a que el hijo imprima su mensaje. El orden de salida **siempre** debe respetar la finalización del hijo antes de que el padre termine:
+int main(int argc, char *argv[]) {
+    my_cv cond;
+    pthread_t c;
+    my_cv_init(&cond);
+    printf("parent: begin\n");
+    Pthread_create(&c, NULL, child, &cond);
+    my_cv_wait(&cond);
+    printf("parent: end\n");
+    return 0;
+}
+```
+
+Pasar `&cond` como argumento funciona porque `cond` vive en el *stack* de `main`, y `main` no retorna hasta después de `my_cv_wait()`: la variable sigue existiendo mientras el hijo la usa.
+
+## Ejecución
+
+Acepta los mismos argumentos opcionales que `ordering_sem` (segundos que se demora el hijo y segundos que se demora el padre):
+
+```bash
+./sem_as_CV.out [espera_hijo] [espera_padre]
+```
+
+Salida de referencia:
 
 ```text
+$ ./sem_as_CV.out
 parent: begin
 child
 parent: end
+
+$ time ./sem_as_CV.out 1 0
+parent: begin
+child
+parent: end
+
+real	0m1.017s
+user	0m0.016s
+sys	0m0.000s
 ```
 
-*(Nota: Puede haber un ligero retardo de 2 segundos antes de "child" debido al `sleep` simulado, pero "parent: end" jamás debe aparecer antes que "child").*
+| Ejecución | Repeticiones | Orden correcto |
+|---|---|---|
+| `./sem_as_CV.out` | 500 | 500 |
+| `./sem_as_CV.out 1 0` (el padre espera primero) | 1 | Sí |
+| `./sem_as_CV.out 0 1` (el hijo señala primero) | 1 | Sí |
 
-## Preguntas de Reflexión para el Estudiante
+## `my_cv` no es una variable de condición
 
-Para asegurarte de que has comprendido los conceptos clave, intenta responder estas preguntas antes de mirar el código fuente o después de ejecutarlo:
+El nombre viene del papel que cumple: en el *join* de la clase 17 ese papel lo hacía una variable de condición. Pero hay dos diferencias importantes:
 
-1.  **Sobre la Inicialización**: En `my_cv.c`, la función `init` inicializa el semáforo con el valor `0`.
-      * ¿Qué pasaría si lo inicializaras en `1` (como en un Mutex)?
-      * ¿El padre esperaría realmente al hijo o continuaría inmediatamente? ¿Por qué?
-2.  **Sobre el paso de Argumentos**: En `sem_as_CV.c` refactorizado, pasamos `&cond` como argumento al hilo hijo en lugar de usar una variable global.
-      * ¿Qué ventaja ofrece esto si quisiéramos coordinar múltiples pares de hilos padre-hijo independientes en el mismo programa?
-3.  **Semáforos vs. Variables de Condición Puras**: Una Variable de Condición estándar (`pthread_cond_wait`) siempre requiere un Mutex asociado.
-      * En nuestra implementación simplificada con semáforos, no usamos un Mutex explícito en el `wait`. ¿Por qué funciona en este caso simple de señalización (Signaling) pero podría fallar en problemas más complejos como el Productor-Consumidor?
-4.  **Manejo de Recursos**: Si el hilo hijo finalizara abruptamente (crash) antes de llamar a `my_cv_signal`:
-      * ¿Qué le sucedería al hilo padre?
-      * ¿Cómo se llama a esta situación en programación concurrente?
+| | Variable de condición (`pthread_cond_t`) | `my_cv` (semáforo en 0) |
+|---|---|---|
+| Señal cuando nadie espera | Se pierde: `pthread_cond_signal()` no tiene efecto | Se recuerda: el valor sube a 1 y el siguiente `wait` no se bloquea |
+| Mutex | `wait` recibe un mutex, lo libera al dormir y lo readquiere al despertar | No usa mutex |
+| Estado | Necesita una variable de estado aparte (`done`) | El propio valor del semáforo es el estado |
 
-## Resultados de Aprendizaje
+Por la primera diferencia, el *join* con semáforo no necesita la variable `done`. Por la segunda, `my_cv` no sirve como reemplazo general de una variable de condición: cuando un hilo debe revisar una condición sobre datos compartidos (por ejemplo, "el buffer no está vacío") y dormirse si no se cumple, esa revisión y el dormirse tienen que ocurrir con un lock adquirido, que es justamente lo que `pthread_cond_wait()` hace de forma atómica. Construir una variable de condición completa a partir de semáforos es mucho más difícil de lo que parece: OSTEP (§31.8) cuenta que programadores con mucha experiencia lo intentaron en Windows y cometieron varios errores, documentados por Andrew Birrell en *Implementing Condition Variables with Semaphores* (2004).
 
-Al finalizar esta práctica, ejecutar el código y responder las preguntas de reflexión, el estudiante será capaz de:
+## Para probar por cuenta propia
 
-1.  **Implementar Señalización con Semáforos:**
-    Comprender cómo inicializar un semáforo en **0** permite usarlo como una barrera o señal, donde `sem_wait` bloquea hasta que ocurre un evento (`sem_post`).
+1. Inicializar el semáforo de `my_cv_init()` en 1. ¿El padre espera al hijo?
+2. Crear tres hijos que compartan el mismo `my_cv` y cambiar el padre para que espere a los tres. ¿Cuántas veces debe llamar a `my_cv_wait()`?
+3. Si el hijo terminara de forma anormal antes de llamar a `my_cv_signal()`, ¿qué le pasaría al padre?
 
-2.  **Evitar la Espera Activa (Busy Waiting):**
-    Diferenciar entre comprobar una variable en un bucle `while` (que consume CPU inútilmente) y bloquear el proceso usando primitivas del SO (`Sem_wait`), permitiendo que el planificador asigne la CPU a otros procesos.
+## Referencias
 
-3.  **Modularizar Primitivas de Sincronización:**
-    Aplicar buenas prácticas de ingeniería de software encapsulando la lógica de sincronización en una estructura propia (`my_cv`) y funciones asociadas, ocultando la complejidad de los semáforos subyacentes al programa principal.
+- Diapositivas de la clase 18, parte 1, p. 21–26.
+- R. H. Arpaci-Dusseau y A. C. Arpaci-Dusseau, *Operating Systems: Three Easy Pieces*, v1.10, cap. 31: [*Semaphores*](https://pages.cs.wisc.edu/~remzi/OSTEP/threads-sema.pdf), §31.3 y §31.8.
 
-4.  **Manejo de Memoria y Argumentos en Hilos:**
-    Practicar el paso de punteros a estructuras (`struct my_cv *`) a través de `pthread_create`, evitando el uso de variables globales y mejorando la reusabilidad del código.
-
-5.  **Depuración de Flujo de Ejecución:**
-    Verificar visualmente (mediante `printf`) y lógicamente cómo las primitivas de sincronización alteran y garantizan el orden determinista de ejecución entre hilos asíncronos.
-
-> [!NOTE]
-> **AI Disclosure:** This document was created with the assistance of Artificial Intelligence language models. The content has been reviewed, edited, and validated by a human author to ensure accuracy and quality.
-
+> [!IMPORTANT]
+> **Sobre esta guía.** El código y la guía se elaboraron con asistencia de un modelo de inteligencia artificial y se revisaron contra las diapositivas de la clase y OSTEP. Las salidas son de una ejecución de referencia del 19/11/2026 en la máquina descrita en el [entorno de ejecución](../../../../clase_14/ejemplos/entorno_ejecucion.md) de la clase 14. Si se encuentra alguna diferencia con lo visto en clase, prevalece lo explicado por el docente.

@@ -1,6 +1,8 @@
-# Ejemplos de las diapositivas
+# Ejemplos de las diapositivas (clase 18, parte 1)
 
-En el siguiente directorio se encuentran los ejemplos vistos en las diapositivas de clase:
-1. **Semaforo como mutex**: [binary_sem](binary_sem/)
-2. **Semaforo para sincronizacion**: [ordering_sem](ordering_sem/)
+Programas que aparecen en las diapositivas de la parte 1:
 
+1. **Semáforo binario como lock** (p. 13–17): [`binary_sem/`](binary_sem/README.md)
+2. **Semáforo para ordenar la ejecución** (p. 21–26): [`ordering_sem/`](ordering_sem/README.md)
+
+El lock implementado con un semáforo y su código de test (p. 18–20) están en [`../sem_as_lock/`](../sem_as_lock/README.md). Ver el [índice de la parte 1](../README.md).
