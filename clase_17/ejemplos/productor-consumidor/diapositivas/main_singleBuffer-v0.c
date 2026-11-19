@@ -1,3 +1,13 @@
+/*
+ * main_singleBuffer-v0.c - Productor/consumidor con buffer de un elemento y
+ * SIN sincronizacion (ni mutex ni variables de condicion). Solucion ROTA.
+ *
+ * Diapositivas p. 40-41; OSTEP cap. 30, Figs. 30.6 y 30.7.
+ *
+ * Compilacion: gcc -Wall -I. -o main_singleBuffer-v0.out main_singleBuffer-v0.c -pthread
+ * Uso:         ./main_singleBuffer-v0.out <loops> <consumers>
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -14,7 +24,7 @@ int consumers = 1;
 // -------------------------------------------------------------------------
 
 int count;  // initially, empty
-int buffer;  
+int buffer;
 
 pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t m = PTHREAD_MUTEX_INITIALIZER;
@@ -42,9 +52,9 @@ int main(int argc, char *argv[]) {
     // Hilos
     pthread_t pid;           // Productor
     pthread_t cid[CMAX];     // Consumidor
-    
+
     // Hilo productor
-    Pthread_create(&pid, NULL, producer, &loops); 
+    Pthread_create(&pid, NULL, producer, &loops);
     // Hilos consumidores
     int i;
     for (i = 0; i < consumers; i++) {
@@ -91,4 +101,3 @@ void *consumer(void *arg) {
   }
   return NULL;
 }
-

@@ -1,23 +1,24 @@
-# Definición de variables
-CC = gcc                         # Compilador
-CFLAGS = -Wall -pthread          # Opciones de compilación (avisos, hilos)
-SOURCES = $(wildcard *.c)        # Todos los archivos .c en el directorio actual
-EXECUTABLES = $(SOURCES:.c=.out) # Ejecutables generados, uno por cada archivo fuente
-INCLUDES = .
-
-# Encuentra todos los archivos .c en el directorio actual
-SOURCES = $(wildcard *.c)
-
-# Genera una lista de ejecutables, cambiando la extensión .c a .out
+# Compila cada archivo .c de la carpeta en un ejecutable .out
+#   make         compila todas las versiones
+#   make traza   compila ademas v1 y v2 con la traza de pasos (-DTRAZA)
+#   make clean   borra los ejecutables
+CC          = gcc
+CFLAGS      = -Wall -I. -pthread
+SOURCES     = $(wildcard *.c)
 EXECUTABLES = $(SOURCES:.c=.out)
+TRAZAS      = main_singleBuffer-v1-traza.out main_singleBuffer-v2-traza.out
 
-# Regla principal (por defecto)
+.PHONY: all traza clean
+
 all: $(EXECUTABLES)
 
-# Regla para compilar cada archivo .c en un archivo .out
-%.out: %.c
+traza: $(TRAZAS)
+
+%.out: %.c mythreads.h
 	$(CC) $(CFLAGS) -o $@ $<
 
-# Regla de limpieza
+%-traza.out: %.c mythreads.h
+	$(CC) $(CFLAGS) -DTRAZA -o $@ $<
+
 clean:
-	rm -f $(EXECUTABLES)
+	rm -f $(EXECUTABLES) $(TRAZAS)

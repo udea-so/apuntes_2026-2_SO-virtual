@@ -1,3 +1,15 @@
+/*
+ * main_singleBuffer-v3.c - Productor/consumidor con buffer de un elemento,
+ * dos variables de condicion (empty y fill) y sentencia while. Solucion
+ * CORRECTA, pero sin marca de terminacion: al acabar la produccion los
+ * consumidores quedan esperando y el programa no termina (Ctrl+C).
+ *
+ * Diapositiva p. 59; OSTEP cap. 30, Fig. 30.12.
+ *
+ * Compilacion: gcc -Wall -I. -o main_singleBuffer-v3.out main_singleBuffer-v3.c -pthread
+ * Uso:         ./main_singleBuffer-v3.out <loops> <consumers>
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -21,7 +33,7 @@ pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 // -------------------------------------------------------------------------------
 
 int count;  // initially, empty
-int buffer;  
+int buffer;
 
 void put(int);
 int get(void);
@@ -45,9 +57,9 @@ int main(int argc, char *argv[]) {
     // Hilos
     pthread_t pid;           // Productor
     pthread_t cid[CMAX];     // Consumidor
-    
+
     // Hilo productor
-    Pthread_create(&pid, NULL, producer, &loops); 
+    Pthread_create(&pid, NULL, producer, &loops);
     // Hilos consumidores
     int i;
     for (i = 0; i < consumers; i++) {
@@ -82,25 +94,26 @@ void *producer(void *arg) {
   int i;
   int loops = *(int *)arg;
   for (i = 0; i < loops; i++) {
-    Pthread_mutex_lock(&mutex);     	          // p1
-    while(count == 1)                           // p2
-      Pthread_cond_wait(&empty, &mutex);         // p3
-    put(i);                                     // p4
-    Pthread_cond_signal(&fill);                 // p5
-    Pthread_mutex_unlock(&mutex);     	        // p6
+    Pthread_mutex_lock(&mutex);                // p1
+    while (count == 1)                         // p2
+      Pthread_cond_wait(&empty, &mutex);       // p3
+    put(i);                                    // p4
+    Pthread_cond_signal(&fill);                // p5
+    Pthread_mutex_unlock(&mutex);              // p6
   }
+  return NULL;
 }
 
 void *consumer(void *arg) {
   int tmp;
-  while (1) {    
-    Pthread_mutex_lock(&mutex);     	          // c1
-    while(count == 0)                           // p2
-      pthread_cond_wait(&fill, &mutex);         // c3
-    tmp = get();                                // c4   
-    pthread_cond_signal(&empty);       	        // c5
-    Pthread_mutex_unlock(&mutex);     	        // c6
+  while (1) {
+    Pthread_mutex_lock(&mutex);                // c1
+    while (count == 0)                         // c2
+      pthread_cond_wait(&fill, &mutex);        // c3
+    tmp = get();                               // c4
+    pthread_cond_signal(&empty);               // c5
+    Pthread_mutex_unlock(&mutex);              // c6
     printf("%d\n", tmp);
   }
+  return NULL;
 }
-

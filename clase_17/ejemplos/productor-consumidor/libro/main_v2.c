@@ -1,3 +1,14 @@
+/*
+ * main_v2.c - Productor/consumidor con buffer circular, DOS variables de
+ * condicion (empty y fill) e if. Solucion ROTA con mas de un consumidor.
+ *
+ * OSTEP cap. 30, combinacion de las Figs. 30.8 (if) y 30.12 (dos CV);
+ * equivale a main-two-cvs-if.c de la tarea del capitulo.
+ *
+ * Compilacion: gcc -Wall -I. -o main_v2.out main_v2.c -pthread
+ * Uso:         ./main_v2.out <buffersize> <loops> <consumers>
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -50,6 +61,7 @@ void *producer(void *arg) {
     Cond_signal(&fill); // p5
     Mutex_unlock(&m); // p6
   }
+  return NULL;
 }
 
 void *consumer(void *arg) {

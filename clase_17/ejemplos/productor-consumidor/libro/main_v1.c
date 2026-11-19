@@ -1,3 +1,14 @@
+/*
+ * main_v1.c - Productor/consumidor con buffer circular, UNA variable de
+ * condicion y while. Solucion ROTA con mas de un consumidor (deadlock).
+ *
+ * OSTEP cap. 30, Fig. 30.10 (aqui con buffer de <buffersize> elementos);
+ * equivale a main-one-cv-while.c de la tarea del capitulo.
+ *
+ * Compilacion: gcc -Wall -I. -o main_v1.out main_v1.c -pthread
+ * Uso:         ./main_v1.out <buffersize> <loops> <consumers>
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -47,6 +58,7 @@ void *producer(void *arg) {
     Cond_signal(&cond); // p5
     Mutex_unlock(&m); // p6
   }
+  return NULL;
 }
 
 void *consumer(void *arg) {
@@ -56,8 +68,8 @@ void *consumer(void *arg) {
       Cond_wait(&cond, &m); // c3
     int tmp = do_get(); // c4
     Cond_signal(&cond); // c5
-   Mutex_unlock(&m); // c6
-   printf("%d\n", tmp);
+    Mutex_unlock(&m); // c6
+    printf("%d\n", tmp);
   }
 }
 

@@ -1,155 +1,234 @@
-# Guía práctica: Variables de Condición y el Problema Productor–Consumidor
+![Built with AI](https://img.shields.io/badge/Built%20with-AI-blue.svg)
 
-> [!important]
-> Estos ejemplos fueron tomados y adaptados (algunos de ellos) del libro de Operating Systems: Three Easy Pieces ([link](https://pages.cs.wisc.edu/~remzi/OSTEP/)). 
+# Productor-consumidor: las versiones de la tarea de OSTEP
 
+Esta guía complementa la de [`diapositivas/`](../diapositivas/README.md), que conviene leer primero. Las cuatro versiones de esta carpeta son adaptaciones simplificadas de los programas de la tarea (*homework*) del capítulo 30 de OSTEP. Todas usan un **buffer circular** desde el principio, y dos de ellas muestran errores que no aparecen en las diapositivas.
 
-## 1. Introducción
+Volver a [productor-consumidor](../README.md) · [índice de ejemplos](../../README.md).
 
-Esta guía práctica tiene como propósito que el estudiante comprenda, experimente y analice el uso correcto de **variables de condición (Condition Variables, CV)** en la resolución del clásico problema del **Productor–Consumidor**.
+## Relación con el libro
 
-El trabajo se desarrolla mediante cuatro implementaciones incrementales, cada una con errores o mejoras específicas que permiten ilustrar principios fundamentales de sincronización en sistemas operativos.
+| Programa | Sincronización | Equivale en la tarea de OSTEP a | Versión de las diapositivas |
+|---|---|---|---|
+| [`main_v1.c`](main_v1.c) | Una CV + `while` | `main-one-cv-while.c` (preguntas 8 y 9) | `main_singleBuffer-v2.c` |
+| [`main_v2.c`](main_v2.c) | Dos CV + `if` | `main-two-cvs-if.c` (pregunta 10) | — |
+| [`main_v3.c`](main_v3.c) | Dos CV + `while` | `main-two-cvs-while.c` (preguntas 1 a 7) | `main_buffer-v3.c` |
+| [`main_v4.c`](main_v4.c) | Dos CV + `while`, pero el lock se libera antes de usar el buffer | `main-two-cvs-while-extra-unlock.c` (pregunta 11) | — |
 
-La práctica se basa en los conceptos del libro *Operating Systems: Three Easy Pieces (OSTEP)*, capítulo *Condition Variables*.
+Los programas originales de la tarea están en [`ostep-homework/threads-cv`](https://github.com/remzi-arpacidusseau/ostep-homework/tree/master/threads-cv). Además de lo que hacen estas versiones, aceptan varios productores y "cadenas de pausas" (`-P`, `-C`) que obligan a un hilo a dormir en una línea concreta, y así permiten forzar cada error de forma reproducible. El documento [`CV_condition-variables.pdf`](CV_condition-variables.pdf) reúne el pseudocódigo de las cuatro versiones (tomado de los apuntes de Remzi Arpaci-Dusseau) junto con el código de `mythreads.h`.
 
-## 2. Conceptos esenciales de variables de condición
+### Diferencias con la serie de las diapositivas
 
-Antes de ejecutar los programas, es fundamental repasar tres conceptos críticos necesarios para la comprensión de los errores inducidos en las versiones preliminares:
+- Las rutinas se llaman `do_fill()` y `do_get()`, el contador es `numfull` y los índices son `fillptr` y `useptr`.
+- **`do_fill()` y `do_get()` no tienen `assert`.** Un error de sincronización no detiene el programa: aparece como **datos repetidos, perdidos o inválidos** en la salida. Por eso, para verificar estas versiones hay que revisar los valores impresos (ver abajo).
+- Ninguna tiene marca de terminación: cuando la producción termina, los consumidores quedan esperando y el programa no termina (`Ctrl+C`).
 
-1.  **Exclusión Mutua:** El acceso a las variables de estado compartido (como los índices del buffer) debe estar estrictamente protegido por un *mutex* (lock) durante toda la operación crítica. Las  operaciones clave son:
-    - `pthread_mutex_lock(m)`
-    - `pthread_mutex_unlock(m)`
-
-2.  **Definición y Operaciones:** Una Variable de Condición actúa como una cola explícita donde los hilos pueden esperar (*wait*) a que ocurra un cambio de estado específico. Las operaciones principales son `wait()` (que libera el lock y duerme el hilo) y `signal()` (que despierta a un hilo en espera).
-    
-    * **`pthread_cond_wait(cond, mutex)`**: 
-      - Libera el mutex **atómicamente**.
-      - Bloquea el hilo que invoca la operación.
-      - Al despertar, readquiere el mutex antes de retornar.
-    * **`pthread_cond_signal(cond)`**:
-      - Despierta un único hilo que esté esperando en la variable de condición.
-      - Si no hay hilos esperando, no tiene efecto.
-
-3.  **La Regla de Oro (Always Use While):** Al despertar de un `wait()`, no se garantiza que la condición por la cual el hilo se durmió siga siendo verdadera (semántica Mesa/Hansen). Por ello, **siempre** se debe verificar la condición de estado dentro de un bucle `while` y nunca mediante un simple `if`.
-
-    ```c
-    pthread_mutex_lock(&m);
-    while (condicion_no_cumplida)
-       pthread_cond_wait(&cv, &m);
-    /* sección donde la condición se cumple */
-    pthread_mutex_unlock(&m);
-    ``` 
-
-* 4. **Estado + CV**: La CV **no almacena estado**. El estado debe mantenerse mediante variables como:
-   - `count`
-   - `numfull`
-   - punteros del buffer (`fillptr`, `useptr`)  
-
-## 3. Archivos de la guía
-
-A continuación se detalla el funcionamiento de cada versión del código fuente provisto. Cada archivo representa una etapa incremental en la solución del problema.
-
-| Archivo      | Descripción breve |
-|--------------|-------------------|
-| `main_v1.c` | Una sola CV, uso de `while` pero señalización incorrecta. |
-| `main_v2.c` | Dos CV (`empty`, `fill`) pero uso incorrecto de `if`. |
-| `main_v3.c` | Dos CV correctamente usadas con `while`. Solución estándar. |
-| `main_v4.c` | Mutex liberado antes de operar en el buffer. Versión didáctica. |
-
-
-
-## 4. Ejecución de los programas
-
-> [!warning]
-Todos los códigos dependen de la librería auxiliar `mythreads.h` incluida en el directorio. 
-
-### 4.1. Compilación
+## Compilación y uso
 
 ```bash
-gcc -I. main_vX.c -Wall -lpthread -o vX.out
+make          # compila main_v1.out ... main_v4.out
+make clean
+./main_vN.out <buffersize> <loops> <consumers>
 ```
 
-Reemplace `X` por la versión 1–4.
+## Cómo verificar la salida
 
-> [!note]
-> Se dispone de un Makefile para no tener que ejecutar la compilación individual para cada archivo fuente.
-
-### 4.2. Ejecución
+Con `loops = 1000`, una ejecución correcta imprime los valores del 0 al 999, **cada uno exactamente una vez** (el orden puede variar, porque cada consumidor imprime después de soltar el lock). Para comprobarlo se guarda la salida y se cuentan las líneas y los valores distintos:
 
 ```bash
-./vX.out <buffersize> <loops> <consumers>
+timeout 2 stdbuf -oL ./main_v3.out 1 1000 2 > salida.txt
+wc -l < salida.txt                        # líneas impresas
+sort -n salida.txt | uniq | wc -l         # valores distintos
+sort -n salida.txt | uniq -c | awk '$1 > 1' | head   # valores repetidos (y cuántas veces)
 ```
 
-Ejemplo:
+| Resultado | Interpretación |
+|---|---|
+| 1000 líneas y 1000 valores distintos | Correcto. Si `timeout` terminó el programa, solo estaba esperando al final. |
+| Menos de 1000 líneas, sin repetidos | *Deadlock*: los hilos quedaron dormidos antes de terminar. |
+| Valores repetidos, o distintos ≠ líneas | Error de sincronización: se consumieron datos dos veces o se leyeron posiciones inválidas. |
+
+Las pruebas de referencia usan un límite de 1 s por ejecución y 50 ejecuciones por escenario.
+
+---
+
+## v1: una variable de condición y `while` (`main_v1.c`)
+
+Es el problema 2 de las diapositivas (p. 53–56) con un buffer de `buffersize` posiciones: productores y consumidores duermen en la misma variable `cond`, y la señal de un consumidor puede despertar a otro consumidor en lugar de al productor.
+
+```c
+    while (numfull == max)    // p2
+      Cond_wait(&cond, &m);   // p3
+    ...
+    while (numfull == 0)      // c2
+      Cond_wait(&cond, &m);   // c3
+```
 
 ```bash
-./v1.out 1 20 3
+timeout 2 stdbuf -oL ./main_v1.out 1 1000 2 | tail -3
 ```
 
-Parámetros:
-- `buffersize`: tamaño del buffer.
-- `loops`: cantidad de ítems producidos.
-- `consumers`: número de consumidores.
+```text
+11
+12
+13
+```
 
-## 5. Análisis Caso por Caso
+| Escenario | Resultado en 50 ejecuciones |
+|---|---|
+| Buffer de 1, 1 consumidor | Correcto en las 50 |
+| Buffer de 1, 2 consumidores | ***Deadlock* en las 50**, después de consumir entre 2 y 103 valores |
+| Buffer de 10, 2 consumidores | Correcto en las 50 |
 
-### 5.1. Versión 1 — main_v1.c: El Error de la Variable Única
+El *deadlock* necesita que coincidan dos cosas: el productor dormido porque el buffer está **lleno**, y un consumidor que vacía el buffer y despierta a otro **consumidor**. Con una sola posición, eso pasa casi en cada vuelta. Con 10 posiciones, el productor duerme muy pocas veces, y un consumidor despertado por error casi siempre encuentra datos, así que los consume y vuelve a señalar, en lugar de dormirse. En estas ejecuciones no se observó ningún bloqueo, pero el error sigue en el código: que no se manifieste no lo hace correcto. La pregunta 9 de la tarea de OSTEP pide justamente construir, con pausas, una ejecución que lo provoque.
 
-* **Descripción**: Implementa una única variable de condición (cond) para manejar tanto la señalización de "buffer lleno" como de "buffer vacío". Utiliza un bucle while para la verificación.
-* **Problema**: Sufre del problema de despertar equivocado. Un consumidor puede despertar a otro consumidor en lugar de a un productor (o viceversa). Esto lleva a un estado donde todos los hilos terminan durmiendo, causando un interbloqueo (deadlock).
+## v2: dos variables de condición e `if` (`main_v2.c`)
 
-### 5.2. Versión 2 — main_v2.c
+Esta versión corrige el problema 2 (hay dos CV, `empty` y `fill`) pero vuelve al `if`, es decir, al problema 1 de las diapositivas (p. 46):
 
-* **Descripción**: Introduce dos variables de condición separadas (empty y fill) para diferenciar a productores de consumidores. Sin embargo, utiliza la sentencia if para verificar el estado del buffer.
-* **Problema**: Vulnerable a condiciones de carrera. Si un hilo despierta pero otro hilo se "cuela" y modifica el buffer antes de que el primero retome el lock, el primer hilo actuará sobre un estado inválido (ej. intentar consumir de un buffer vacío), provocando errores de ejecución o corrupción de datos.
+```c
+    if (numfull == max)       // p2
+      Cond_wait(&empty, &m);  // p3
+    ...
+    if (numfull == 0)         // c2
+      Cond_wait(&fill, &m);   // c3
+```
 
-### 5.3. Versión 3 — main_v3.c (Solución correcta)
+```bash
+timeout 2 stdbuf -oL ./main_v2.out 1 1000 2 > salida.txt
+wc -l < salida.txt
+sort -n salida.txt | uniq | wc -l
+sort -n salida.txt | uniq -c | awk '$1 > 1' | head -5
+```
 
-* **Descripción**: Combina el uso de dos variables de condición (empty y fill) con la verificación de estado mediante bucles while.
+```text
+137076
+945
+      2 191
+      2 197
+      2 201
+      2 208
+      2 215
+```
 
-* **Estado**: Comportamiento *esperado*. Esta versión maneja adecuadamente los despertares espurios y asegura que los hilos solo procedan cuando el estado es válido, respetando la exclusión mutua. Representa la implementación estándar segura.
+| Escenario | Resultado en 50 ejecuciones |
+|---|---|
+| Buffer de 1, 1 consumidor | Correcto en las 50 |
+| Buffer de 1, 2 consumidores | **Salida incorrecta en las 50** |
+| Buffer de 10, 2 consumidores | Salida incorrecta en 3; correcto en 47 |
 
-### 5.4. Versión 4 — main_v4.c 
+Con dos consumidores y un buffer de una posición, el programa imprimió **137 076 líneas en 2 segundos**, para solo 1000 valores producidos, y aun así faltaron valores: solo hubo 945 distintos. Como hay dos variables de condición, a un consumidor solo lo puede despertar el productor. El error es, entonces, exactamente el de la p. 46: el productor despierta a `Tc1`, `Tc2` se cuela y consume el dato, y `Tc1`, que no vuelve a verificar, llama a `do_get()` con el buffer vacío.
 
-**Descripción**: Esta versión libera el mutex antes de llamar a `do_fill()`/`do_get()`.
+```mermaid
+sequenceDiagram
+    participant Tc1
+    participant Tp
+    participant Tc2
+    Tc1->>Tc1: c2: numfull == 0 → c3: wait(fill)
+    Tp->>Tp: p4: do_fill (numfull = 1)
+    Tp-->>Tc1: p5: signal(fill) → Tc1 queda listo
+    Tc2->>Tc2: c1, c2: numfull == 1 → c4: do_get (numfull = 0)
+    Tc1->>Tc1: sale de wait (if: no re-verifica)
+    Tc1->>Tc1: c4: do_get() con el buffer vacío
+    Note over Tc1: numfull = -1 y se lee un valor viejo
+```
 
-* **Comportamiento esperado:**  
-  - Mayor concurrencia.
-  - **Potencialmente riesgosa** si se agregan operaciones adicionales.
-  - Es una versión **didáctica**, aun tiene problemas.
+Aquí no hay `assert` que detenga el programa, así que el error se propaga. `numfull` queda en **−1**, y desde ese momento ninguna condición de espera se cumple: los consumidores dejan de dormir porque `numfull == 0` es falso, y el productor también, porque `numfull == max` es falso. Los consumidores giran sacando una y otra vez valores viejos del buffer, y eso explica las más de cien mil líneas. Con un buffer de 10 el error es menos frecuente (3 de 50), porque para que ocurra el buffer debe tener justo un elemento cuando el consumidor se cuela.
 
-## 6. Tabla comparativa
+## v3: dos variables de condición y `while` (`main_v3.c`)
 
-| Versión | # CV | Uso de `while` | Corrección | Problema principal | Caso en que funciona |
-|--------|------|-----------------|------------|--------------------|----------------------|
-| **v1** | 1    | Sí              |  Incorrecta | Consumidores despiertan consumidores; deadlock posible | 1 productor + 1 consumidor |
-| **v2** | 2    |  No           |  Incorrecta | Wakeups espurios; revalidación insuficiente | Casos simples |
-| **v3** | 2    |  Sí          |  Correcta | Ninguno | Cualquier cantidad de hilos |
-| **v4** | 2    |  Sí          |  Parcial | Riesgo al operar sin mutex | Uso educativo |
+Es la solución correcta (OSTEP, Figs. 30.13 y 30.14), equivalente a `main_buffer-v3.c` de las diapositivas.
 
-## 7. Resultados de Aprendizaje Esperados
+```bash
+timeout 2 stdbuf -oL ./main_v3.out 1 1000 2 > salida.txt
+wc -l < salida.txt
+sort -n salida.txt | uniq | wc -l
+```
 
-Al finalizar la ejecución y análisis de estos códigos, se espera que el estudiante sea capaz de adquirir las siguientes habilidades claves.
+```text
+1000
+1000
+```
 
-### 7.1. Conceptuales
-- Comprender el funcionamiento de variables de condición en POSIX.
-- Diferenciar entre `if` y `while` en sincronización.
-- Identificar errores como deadlocks, wakeups espurios y despertares incorrectos.
-- Reconocer que las CV no contienen estado; solo coordinan hilos.
+| Escenario | Resultado en 50 ejecuciones |
+|---|---|
+| Buffer de 1, 1 consumidor | Correcto en las 50 |
+| Buffer de 1, 2 consumidores | Correcto en las 50 |
+| Buffer de 10, 2 consumidores | Correcto en las 50 |
 
-### 7.2. Procedimentales
-- Compilar programas concurrentes con `pthread`.
-- Observar empíricamente fallos de sincronización.
-- Comparar implementaciones incrementales y sus consecuencias.
+En todas las ejecuciones el programa quedó esperando al final, porque no tiene marca de terminación.
 
-### 7.3. Actitudinales
-- Adoptar buenas prácticas en programación concurrente.
-- Desarrollar criterio técnico para identificar patrones correctos de sincronización.
-- Reconocer la importancia de diseñar correctamente sistemas concurrentes.
+## v4: el lock se libera antes de usar el buffer (`main_v4.c`)
 
-## 8. Conclusión
+Esta versión espera correctamente (dos CV y `while`), pero **suelta el lock** antes de llamar a `do_fill()`/`do_get()` y lo vuelve a tomar después, para señalar:
 
-Las cuatro implementaciones permiten explorar la evolución del problema productor–consumidor desde soluciones incorrectas hasta la versión correcta y robusta. Esta guía prepara al estudiante para enfrentar problemas reales de sincronización en sistemas operativos modernos.
+```c
+    Mutex_lock(&m);           // c1
+    while (numfull == 0)      // c2
+      Cond_wait(&fill, &m);   // c3
+    Mutex_unlock(&m);         // c3a  <-- se suelta el lock
+    int tmp = do_get();       // c4   <-- fuera de la sección crítica
+    Mutex_lock(&m);           // c4a
+    Cond_signal(&empty);      // c5
+    Mutex_unlock(&m);         // c6
+```
 
-> [!note]
-> **Nota sobre IA**: Este contenido fue elaborado y estructurado con la asistencia de un modelo de inteligencia artificial. 
+Podría parecer que así se gana concurrencia, pero `do_get()` lee y modifica `buffer`, `useptr` y `numfull`, que son variables compartidas: dejar esas operaciones fuera del lock rompe la **exclusión mutua**. La verificación de `c2` ya no sirve, porque entre `c3a` y `c4` otro consumidor puede verificar la misma condición y sacar el mismo dato:
+
+```mermaid
+sequenceDiagram
+    participant Tc1
+    participant Tc2
+    Tc1->>Tc1: c1, c2: numfull == 1 → pasa
+    Tc1->>Tc1: c3a: unlock
+    Tc2->>Tc2: c1, c2: numfull sigue en 1 → pasa
+    Tc2->>Tc2: c3a: unlock
+    Tc1->>Tc1: c4: do_get() → lee buffer[useptr]
+    Tc2->>Tc2: c4: do_get() → lee la misma posición<br/>o la siguiente, sin dato
+    Note over Tc1,Tc2: valor repetido o inválido, numfull = -1
+```
+
+```bash
+timeout 2 stdbuf -oL ./main_v4.out 1 1000 2 > salida.txt
+wc -l < salida.txt
+sort -n salida.txt | uniq | wc -l
+sort -n salida.txt | uniq -c | awk '$1 > 1' | head -5
+```
+
+```text
+1000
+959
+      2 200
+      3 220
+      2 247
+      2 286
+      2 311
+```
+
+| Escenario | Resultado en 50 ejecuciones |
+|---|---|
+| Buffer de 1, 1 consumidor | Correcto en las 50 |
+| Buffer de 1, 2 consumidores | **Salida incorrecta en las 50** |
+| Buffer de 10, 2 consumidores | **Salida incorrecta en las 50** |
+
+Con un solo consumidor no se observó ningún error, pero el código sigue siendo incorrecto: el productor y el consumidor también modifican `numfull` fuera del lock (`numfull++` en `do_fill()` y `numfull--` en `do_get()`), y esa es la misma carrera del contador de las clases 14 y 15. Con dos consumidores el error aparece siempre, sea cual sea el tamaño del buffer.
+
+La ejecución de referencia imprimió 1000 líneas, la cantidad esperada, pero solo 959 valores distintos: algunos aparecen dos o tres veces y otros no aparecen. **Contar las líneas no basta para verificar un programa concurrente**: hay que revisar los valores. La lección es la de las clases 15 y 16: toda operación sobre datos compartidos debe estar dentro de la sección crítica. Las variables de condición resuelven la **espera**; no reemplazan al lock.
+
+## Resumen
+
+| Versión | Problema | Con 2 consumidores y buffer de 1 |
+|---|---|---|
+| `main_v1` | Una sola CV: la señal despierta al hilo equivocado | *Deadlock* |
+| `main_v2` | `if`: al despertar no se re-verifica el estado | Datos repetidos o inválidos |
+| `main_v3` | Ninguno (no tiene marca de terminación) | Correcto |
+| `main_v4` | El buffer se usa fuera de la sección crítica | Datos repetidos o perdidos |
+
+## Para probar por cuenta propia
+
+1. Ejecutar `main_v2.out 1 1000 1` (un solo consumidor) y verificar la salida. ¿Por qué el `if` no causa problemas con un solo consumidor?
+2. Ejecutar `main_v4.out` con 1, 2 y 5 consumidores y comparar la cantidad de valores distintos.
+3. Descargar los programas de [`ostep-homework/threads-cv`](https://github.com/remzi-arpacidusseau/ostep-homework/tree/master/threads-cv), leer su `README` y resolver las preguntas 8 a 11 del capítulo, que usan las cadenas de pausas para provocar cada error a voluntad.
+
+> [!IMPORTANT]
+> **Sobre esta guía.** El código y la guía se elaboraron con asistencia de un modelo de inteligencia artificial y se revisaron contra OSTEP (v1.10). Las salidas son de una ejecución de referencia del 19/11/2026 en la máquina descrita en el [entorno de ejecución](../../../../clase_14/ejemplos/entorno_ejecucion.md) de la clase 14; en otra máquina los conteos varían. Si se encuentra alguna diferencia con lo visto en clase, prevalece lo explicado por el docente.

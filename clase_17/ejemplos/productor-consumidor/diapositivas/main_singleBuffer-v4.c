@@ -1,3 +1,15 @@
+/*
+ * main_singleBuffer-v4.c - La version v3 (buffer de un elemento, empty/fill
+ * y while) con marca de terminacion: al final el productor pone un -1 por
+ * cada consumidor. Solucion CORRECTA que termina.
+ *
+ * No aparece en las diapositivas: aplica al buffer de un elemento la marca de
+ * terminacion de main_buffer-v4.c (p. 64).
+ *
+ * Compilacion: gcc -Wall -I. -o main_singleBuffer-v4.out main_singleBuffer-v4.c -pthread
+ * Uso:         ./main_singleBuffer-v4.out <loops> <consumers>
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -22,7 +34,7 @@ pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 // -------------------------------------------------------------------------------
 
 int count;  // initially, empty
-int buffer;  
+int buffer;
 
 void put(int);
 int get(void);
@@ -46,9 +58,9 @@ int main(int argc, char *argv[]) {
     // Hilos
     pthread_t pid;           // Productor
     pthread_t cid[CMAX];     // Consumidor
-    
+
     // Hilo productor
-    Pthread_create(&pid, NULL, producer, &loops); 
+    Pthread_create(&pid, NULL, producer, &loops);
     // Hilos consumidores
     int i;
     for (i = 0; i < consumers; i++) {
@@ -83,34 +95,35 @@ void *producer(void *arg) {
   int i;
   int loops = *(int *)arg;
   for (i = 0; i < loops; i++) {
-    Pthread_mutex_lock(&mutex);     	          // p1
-    while(count == 1)                           // p2
-      Pthread_cond_wait(&empty, &mutex);         // p3
-    put(i);                                     // p4
-    Pthread_cond_signal(&fill);                 // p5
-    Pthread_mutex_unlock(&mutex);     	        // p6
+    Pthread_mutex_lock(&mutex);                // p1
+    while (count == 1)                         // p2
+      Pthread_cond_wait(&empty, &mutex);       // p3
+    put(i);                                    // p4
+    Pthread_cond_signal(&fill);                // p5
+    Pthread_mutex_unlock(&mutex);              // p6
   }
-  // end case
+  // end case: una marca de terminacion (-1) por cada consumidor
   for (i = 0; i < consumers; i++) {
     Mutex_lock(&mutex);
-    while (count == 1) 
-	    Cond_wait(&empty, &mutex);
-	  put(-1);
-	  Cond_signal(&fill);
-	  Mutex_unlock(&mutex);
+    while (count == 1)
+      Cond_wait(&empty, &mutex);
+    put(-1);
+    Cond_signal(&fill);
+    Mutex_unlock(&mutex);
   }
+  return NULL;
 }
 
 void *consumer(void *arg) {
   int tmp = 0;
-  while (tmp != -1) {                           // End case
-    Pthread_mutex_lock(&mutex);     	          // c1
-    while(count == 0)                           // p2
-      pthread_cond_wait(&fill, &mutex);         // c3
-    tmp = get();                                // c4   
-    pthread_cond_signal(&empty);       	        // c5
-    Pthread_mutex_unlock(&mutex);     	        // c6
+  while (tmp != -1) {                          // end case
+    Pthread_mutex_lock(&mutex);                // c1
+    while (count == 0)                         // c2
+      pthread_cond_wait(&fill, &mutex);        // c3
+    tmp = get();                               // c4
+    pthread_cond_signal(&empty);               // c5
+    Pthread_mutex_unlock(&mutex);              // c6
     if (verbose) printf("%d\n", tmp);
   }
+  return NULL;
 }
-

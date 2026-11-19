@@ -1,3 +1,15 @@
+/*
+ * main_v3.c - Productor/consumidor con buffer circular, DOS variables de
+ * condicion (empty y fill) y while. Solucion CORRECTA (sin marca de
+ * terminacion: el programa no termina, Ctrl+C).
+ *
+ * OSTEP cap. 30, Figs. 30.13 y 30.14; equivale a main-two-cvs-while.c de la
+ * tarea del capitulo.
+ *
+ * Compilacion: gcc -Wall -I. -o main_v3.out main_v3.c -pthread
+ * Uso:         ./main_v3.out <buffersize> <loops> <consumers>
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -50,6 +62,7 @@ void *producer(void *arg) {
     Cond_signal(&fill); // p5
     Mutex_unlock(&m); // p6
   }
+  return NULL;
 }
 
 void *consumer(void *arg) {

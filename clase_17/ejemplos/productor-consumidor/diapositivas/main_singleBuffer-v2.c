@@ -1,3 +1,14 @@
+/*
+ * main_singleBuffer-v2.c - Productor/consumidor con buffer de un elemento,
+ * una sola variable de condicion y sentencia while. Solucion ROTA.
+ *
+ * Diapositivas p. 50-58; OSTEP cap. 30, Fig. 30.10 y traza de la Fig. 30.11.
+ *
+ * Compilacion: gcc -Wall -I. -o main_singleBuffer-v2.out main_singleBuffer-v2.c -pthread
+ * Con traza:   gcc -Wall -I. -DTRAZA -o main_singleBuffer-v2-traza.out main_singleBuffer-v2.c -pthread
+ * Uso:         ./main_singleBuffer-v2.out <loops> <consumers>
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -8,6 +19,14 @@
 
 #define CMAX 10   // Numero maximo de consumidores
 
+// Traza opcional (compilar con -DTRAZA): imprime los pasos de cada hilo con
+// las etiquetas p1-p6 / c1-c6 de las diapositivas en lugar de los valores.
+#ifdef TRAZA
+#define TRAZA_PRINTF(...) printf(__VA_ARGS__)
+#else
+#define TRAZA_PRINTF(...)
+#endif
+
 int loops;
 int consumers = 1;
 
@@ -16,16 +35,15 @@ int consumers = 1;
 pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
-// -------------------------------------------------------------------------------
-
 int count;  // initially, empty
-int buffer;  
+int buffer;
+
+// -------------------------------------------------------------------------------
 
 void put(int);
 int get(void);
 void *producer(void *);
 void *consumer(void *);
-
 
 // -------------------------------------------------------------------------------
 
@@ -42,14 +60,16 @@ int main(int argc, char *argv[]) {
     count = 0;
     // Hilos
     pthread_t pid;           // Productor
-    pthread_t cid[CMAX];     // Consumidor
-    
+    pthread_t cid[CMAX];     // Consumidores
+    int ids[CMAX];           // Identificador de cada consumidor (Tc1, Tc2, ...)
+
     // Hilo productor
-    Pthread_create(&pid, NULL, producer, &loops); 
+    Pthread_create(&pid, NULL, producer, &loops);
     // Hilos consumidores
     int i;
     for (i = 0; i < consumers; i++) {
-        Pthread_create(&cid[i], NULL, consumer, NULL);
+        ids[i] = i + 1;
+        Pthread_create(&cid[i], NULL, consumer, &ids[i]);
     }
     // Espera del hilo principal
     Pthread_join(pid, NULL); // Espera productor
@@ -80,25 +100,40 @@ void *producer(void *arg) {
   int i;
   int loops = *(int *)arg;
   for (i = 0; i < loops; i++) {
-    Pthread_mutex_lock(&mutex);     	          // p1
-    while(count == 1)                           // p2
-      Pthread_cond_wait(&cond, &mutex);         // p3
-    put(i);                                     // p4
-    Pthread_cond_signal(&cond);                 // p5
-    Pthread_mutex_unlock(&mutex);     	        // p6
+    Pthread_mutex_lock(&mutex);                // p1
+    while (count == 1) {                       // p2
+      TRAZA_PRINTF("Tp  p3: buffer lleno, duerme\n");
+      Pthread_cond_wait(&cond, &mutex);        // p3
+      TRAZA_PRINTF("Tp  p3: despierta (count=%d)\n", count);
+    }
+    put(i);                                    // p4
+    TRAZA_PRINTF("Tp  p4: produce %d\n", i);
+    TRAZA_PRINTF("Tp  p5: signal\n");
+    Pthread_cond_signal(&cond);                // p5
+    Pthread_mutex_unlock(&mutex);              // p6
   }
+  return NULL;
 }
 
 void *consumer(void *arg) {
+  int id = *(int *)arg;   // 1, 2, ... (Tc1, Tc2, ...); solo lo usa la traza
+  (void) id;
   int tmp;
-  while (1) {    
-    Pthread_mutex_lock(&mutex);     	          // c1
-    while(count == 0)                           // p2
-      pthread_cond_wait(&cond, &mutex);         // c3
-    tmp = get();                                // c4   
-    pthread_cond_signal(&cond);       	        // c5
-    Pthread_mutex_unlock(&mutex);     	        // c6
+  while (1) {
+    Pthread_mutex_lock(&mutex);                // c1
+    while (count == 0) {                       // c2
+      TRAZA_PRINTF("Tc%d c3: buffer vacio, duerme\n", id);
+      pthread_cond_wait(&cond, &mutex);        // c3
+      TRAZA_PRINTF("Tc%d c3: despierta (count=%d)\n", id, count);
+    }
+    tmp = get();                               // c4
+    TRAZA_PRINTF("Tc%d c4: consume %d\n", id, tmp);
+    TRAZA_PRINTF("Tc%d c5: signal\n", id);
+    pthread_cond_signal(&cond);                // c5
+    Pthread_mutex_unlock(&mutex);              // c6
+#ifndef TRAZA
     printf("%d\n", tmp);
+#endif
   }
+  return NULL;
 }
-

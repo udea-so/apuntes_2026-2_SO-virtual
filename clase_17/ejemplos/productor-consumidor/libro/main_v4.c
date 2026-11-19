@@ -1,3 +1,15 @@
+/*
+ * main_v4.c - La version main_v3.c, pero el lock se libera antes de do_fill()
+ * y de do_get() y se vuelve a tomar despues. Solucion ROTA: las operaciones
+ * sobre el buffer quedan fuera de la region critica.
+ *
+ * Equivale a main-two-cvs-while-extra-unlock.c de la tarea del cap. 30 de
+ * OSTEP (pregunta 11).
+ *
+ * Compilacion: gcc -Wall -I. -o main_v4.out main_v4.c -pthread
+ * Uso:         ./main_v4.out <buffersize> <loops> <consumers>
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -52,6 +64,7 @@ void *producer(void *arg) {
     Cond_signal(&fill);       // p5
     Mutex_unlock(&m);         // p6
   }
+  return NULL;
 }
 
 void *consumer(void *arg) {
@@ -64,6 +77,7 @@ void *consumer(void *arg) {
     Mutex_lock(&m);           // c4a
     Cond_signal(&empty);      // c5
     Mutex_unlock(&m);         // c6
+    printf("%d\n", tmp);
   }
 }
 
