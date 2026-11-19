@@ -257,7 +257,7 @@ $ timeout 2 stdbuf -oL ./main_singleBuffer-v2.out 1000 2 | tail -3
 | 1 productor, 1 consumidor | 20 | Se consumen los 1000 valores (y el programa queda esperando al final, como en v1). |
 | 1 productor, 2 consumidores | 100 | ***Deadlock* en las 100**: el programa se detiene después de consumir entre 4 y 154 valores, según la ejecución. |
 
-Ya no falla ningún `assert`, pero con dos consumidores el programa **se congela** a mitad de la producción. En el manuscrito de la clase (p. 58), la ejecución en vivo se detuvo hacia el valor 93.
+Ya no falla ningún `assert`, pero con dos consumidores el programa **se congela** a mitad de la producción. La captura de la diapositiva p. 58 muestra una ejecución con dos consumidores que se detuvo después del valor 93.
 
 ### Problema 2: la señal despierta al hilo equivocado (p. 53–56)
 
