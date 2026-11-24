@@ -1,0 +1,113 @@
+<mxfile host="drawio" agent="Claude Code">
+  <diagram id="rwlock-escritor" name="Escritor exclusivo">
+    <mxGraphModel dx="800" dy="400" grid="1" gridSize="5" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="660" pageHeight="360" background="#FFFFFF" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <!-- Encabezados -->
+        <mxCell id="tl" value="&lt;b&gt;Hilos lectores&lt;/b&gt;&lt;br&gt;(readers)" style="text;html=1;align=center;verticalAlign=middle;fontFamily=Arial;fontSize=20;" vertex="1" parent="1">
+          <mxGeometry x="0" y="28" width="170" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="te" value="&lt;b&gt;Hilos escritores&lt;/b&gt;&lt;br&gt;(writers)" style="text;html=1;align=center;verticalAlign=middle;fontFamily=Arial;fontSize=20;" vertex="1" parent="1">
+          <mxGeometry x="465" y="28" width="180" height="50" as="geometry" />
+        </mxCell>
+        <!-- Recurso compartido -->
+        <mxCell id="rc" value="Recurso&lt;br&gt;compartido" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#CCCCCC;strokeColor=#333333;fontFamily=Arial;fontSize=18;" vertex="1" parent="1">
+          <mxGeometry x="245" y="0" width="150" height="90" as="geometry" />
+        </mxCell>
+        <!-- Fila 1: W1 escribe -->
+        <mxCell id="r1" value="R1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#D5E8D4;strokeColor=#82B366;fontFamily=Arial;fontSize=17;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="45" y="103" width="44" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="ar1" value="" style="shape=singleArrow;direction=west;whiteSpace=wrap;html=1;arrowWidth=0.5;arrowSize=0.3;fillColor=#C9D7EE;strokeColor=none;" vertex="1" parent="1">
+          <mxGeometry x="110" y="110" width="120" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="xr1" value="✖" style="text;html=1;align=center;verticalAlign=middle;fontFamily=Arial;fontSize=30;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="150" y="105" width="40" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="b1" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#2F5597;strokeColor=#1F3864;" vertex="1" parent="1">
+          <mxGeometry x="305" y="110" width="30" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="aw1" value="" style="shape=singleArrow;direction=west;whiteSpace=wrap;html=1;arrowWidth=0.5;arrowSize=0.3;fillColor=#7EA6E0;strokeColor=none;" vertex="1" parent="1">
+          <mxGeometry x="410" y="110" width="120" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="w1" value="W1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#F8CECC;strokeColor=#B85450;strokeWidth=3;fontFamily=Arial;fontSize=17;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="551" y="103" width="44" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="lw1" value="escribe: tiene &lt;font face=&quot;Courier New&quot;&gt;writelock&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=middle;fontFamily=Arial;fontSize=15;fontStyle=1;fontColor=#B85450;" vertex="1" parent="1">
+          <mxGeometry x="375" y="84" width="200" height="22" as="geometry" />
+        </mxCell>
+        <!-- Fila 2 -->
+        <mxCell id="r2" value="R2" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#D5E8D4;strokeColor=#82B366;fontFamily=Arial;fontSize=17;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="45" y="158" width="44" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="ar2" value="" style="shape=singleArrow;direction=west;whiteSpace=wrap;html=1;arrowWidth=0.5;arrowSize=0.3;fillColor=#C9D7EE;strokeColor=none;" vertex="1" parent="1">
+          <mxGeometry x="110" y="165" width="120" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="xr2" value="✖" style="text;html=1;align=center;verticalAlign=middle;fontFamily=Arial;fontSize=30;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="150" y="160" width="40" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="b2" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#2F5597;strokeColor=#1F3864;" vertex="1" parent="1">
+          <mxGeometry x="305" y="165" width="30" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="aw2" value="" style="shape=singleArrow;direction=west;whiteSpace=wrap;html=1;arrowWidth=0.5;arrowSize=0.3;fillColor=#C9D7EE;strokeColor=none;" vertex="1" parent="1">
+          <mxGeometry x="410" y="165" width="120" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="xw2" value="✖" style="text;html=1;align=center;verticalAlign=middle;fontFamily=Arial;fontSize=30;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="450" y="160" width="40" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="w2" value="W2" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#F8CECC;strokeColor=#B85450;fontFamily=Arial;fontSize=17;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="551" y="158" width="44" height="44" as="geometry" />
+        </mxCell>
+        <!-- Fila 3 -->
+        <mxCell id="r3" value="R3" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#D5E8D4;strokeColor=#82B366;fontFamily=Arial;fontSize=17;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="45" y="213" width="44" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="ar3" value="" style="shape=singleArrow;direction=west;whiteSpace=wrap;html=1;arrowWidth=0.5;arrowSize=0.3;fillColor=#C9D7EE;strokeColor=none;" vertex="1" parent="1">
+          <mxGeometry x="110" y="220" width="120" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="xr3" value="✖" style="text;html=1;align=center;verticalAlign=middle;fontFamily=Arial;fontSize=30;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="150" y="215" width="40" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="b3" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#2F5597;strokeColor=#1F3864;" vertex="1" parent="1">
+          <mxGeometry x="305" y="220" width="30" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="aw3" value="" style="shape=singleArrow;direction=west;whiteSpace=wrap;html=1;arrowWidth=0.5;arrowSize=0.3;fillColor=#C9D7EE;strokeColor=none;" vertex="1" parent="1">
+          <mxGeometry x="410" y="220" width="120" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="xw3" value="✖" style="text;html=1;align=center;verticalAlign=middle;fontFamily=Arial;fontSize=30;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="450" y="215" width="40" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="w3" value="W3" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#F8CECC;strokeColor=#B85450;fontFamily=Arial;fontSize=17;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="551" y="213" width="44" height="44" as="geometry" />
+        </mxCell>
+        <!-- Fila 4 -->
+        <mxCell id="r4" value="R4" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#D5E8D4;strokeColor=#82B366;fontFamily=Arial;fontSize=17;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="45" y="268" width="44" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="ar4" value="" style="shape=singleArrow;direction=west;whiteSpace=wrap;html=1;arrowWidth=0.5;arrowSize=0.3;fillColor=#C9D7EE;strokeColor=none;" vertex="1" parent="1">
+          <mxGeometry x="110" y="275" width="120" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="xr4" value="✖" style="text;html=1;align=center;verticalAlign=middle;fontFamily=Arial;fontSize=30;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="150" y="270" width="40" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="b4" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#2F5597;strokeColor=#1F3864;" vertex="1" parent="1">
+          <mxGeometry x="305" y="275" width="30" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="aw4" value="" style="shape=singleArrow;direction=west;whiteSpace=wrap;html=1;arrowWidth=0.5;arrowSize=0.3;fillColor=#C9D7EE;strokeColor=none;" vertex="1" parent="1">
+          <mxGeometry x="410" y="275" width="120" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="xw4" value="✖" style="text;html=1;align=center;verticalAlign=middle;fontFamily=Arial;fontSize=30;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="450" y="270" width="40" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="w4" value="W4" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#F8CECC;strokeColor=#B85450;fontFamily=Arial;fontSize=17;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="551" y="268" width="44" height="44" as="geometry" />
+        </mxCell>
+        <!-- Leyenda -->
+        <mxCell id="ley" value="✖ = bloqueado: mientras un escritor tiene &lt;font face=&quot;Courier New&quot;&gt;writelock&lt;/font&gt;, ningún otro hilo accede" style="text;html=1;align=center;verticalAlign=middle;fontFamily=Arial;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="0" y="318" width="640" height="28" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
