@@ -1,3 +1,16 @@
+/*
+ * dining_philosophers_no_deadlock.c - Filosofos comensales: el filosofo 4
+ * toma los palillos en el orden contrario (derecho y luego izquierdo), lo que
+ * rompe la espera circular. Solucion CORRECTA (sin deadlock).
+ *
+ * Diapositivas (parte 2) p. 45-46; OSTEP cap. 31, §31.6, Fig. 31.16.
+ *
+ * Codigo de ostep-code/threads-sema (adaptado: mensajes y salida por linea).
+ *
+ * Compilacion: gcc -Wall -I. -o dining_philosophers_no_deadlock.out dining_philosophers_no_deadlock.c -pthread
+ * Uso:         ./dining_philosophers_no_deadlock.out <num_loops>
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
@@ -65,9 +78,10 @@ void *philosopher(void *arg) {
                                                                              
 int main(int argc, char *argv[]) {
     if (argc != 2) {
-	fprintf(stderr, "usage: dining_philosophers <num_loops>\n");
+	fprintf(stderr, "uso: %s <num_loops>\n", argv[0]);
 	exit(1);
     }
+    setvbuf(stdout, NULL, _IOLBF, 0);   // cada linea sale de inmediato
     printf("dining: started\n");
     
     int i;

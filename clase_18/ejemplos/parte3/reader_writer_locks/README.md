@@ -1,134 +1,159 @@
-# Implementación de Reader-Writer Locks (Semáforos)
+![Built with AI](https://img.shields.io/badge/Built%20with-AI-blue.svg)
 
-Este directorio contiene una implementación del patrón **Lectores-Escritores** utilizando **Semáforos**, basado en la teoría del Capítulo 31 ("Semaphores") del libro *Operating Systems: Three Easy Pieces* (Remzi).
+# Lock de lectores-escritores
 
-## Descripción del Problema
+Un lock común es demasiado restrictivo cuando varios hilos solo quieren **leer** un dato compartido: las lecturas no se estorban entre sí, y aun así el lock las obliga a turnarse. El **lock de lectores-escritores** (*reader-writer lock*) permite muchos lectores a la vez o un solo escritor (diapositivas de la parte 2, p. 26–34; OSTEP §31.5).
 
-Un `mutex` tradicional es demasiado restrictivo para ciertas estructuras de datos (como bases de datos o cachés). Si un hilo solo quiere **leer** datos, no debería impedir que otros hilos también lean.
+Volver al [índice de la parte 3](../README.md).
 
-* **El Problema del Mutex Simple:** Bloquea a *todos*, incluso si varios hilos solo quieren mirar (leer) sin tocar (escribir).
-* **La Solución (RWLock):**
-    * Permite **Múltiples Lectores** simultáneos.
-    * Permite **Solo un Escritor** (exclusión mutua total).
-    * Los escritores esperan a que no haya lectores activos.
+## Relación con las diapositivas y el libro
 
-### Estructura de Datos (`rwlock.h`)
+| Programa | Qué muestra | Diapositivas | OSTEP cap. 31 (v1.10) |
+|---|---|---|---|
+| [`rwlock.c`](rwlock.c) → `rwlock.out` | El `rwlock_t` con semáforos y una prueba con lectores y escritores que comprueba la exclusión | p. 28–33 | §31.5, Fig. 31.13 |
+| `rwlock-lectura-larga.out` (`-DLECTURA_LARGA`) | La misma prueba con lecturas más largas: muestra la inanición de los escritores | p. 34 | §31.5 |
 
-La estructura típica definida por Remzi utiliza dos semáforos y un contador:
+## Compilación y uso
+
+```bash
+make          # genera rwlock.out y rwlock-lectura-larga.out
+make clean
+
+./rwlock.out <read_loops> <write_loops> [lectores] [escritores] [espera_ms]
+```
+
+Cada lector lee un contador compartido `read_loops` veces y cada escritor lo incrementa `write_loops` veces (por defecto, 1 lector y 1 escritor). Primero se crean los lectores y luego los escritores. `espera_ms` (opcional) hace que cada escritor espere antes de empezar, para que llegue cuando los lectores ya están leyendo.
+
+Al final el programa informa:
+
+- el valor final del contador, que debe ser `escritores × write_loops`;
+- el **máximo de lectores simultáneos** dentro de la sección crítica;
+- las **violaciones de la exclusión**: veces que un escritor estuvo acompañado por otro hilo.
+
+Para contar los hilos que están dentro de la sección crítica, el programa usa operaciones atómicas (`__atomic_add_fetch`) que no forman parte del lock: son solo una forma de observarlo. Cada hilo informa además el instante en que terminó.
+
+## El problema (p. 26–27)
+
+| Tipo de hilo | Qué hace | Restricción |
+|---|---|---|
+| Escritor | Cambia los datos | Solo **un** escritor a la vez, y sin lectores |
+| Lector | Solo lee los datos | **Varios** lectores a la vez, siempre que no haya un escritor |
+
+## El lock (p. 28–31, OSTEP Fig. 31.13)
 
 ```c
 typedef struct _rwlock_t {
-    sem_t lock;      // Semáforo binario (mutex) para proteger el contador 'readers'
-    sem_t writelock; // Semáforo para exclusión de escritores
-    int readers;     // Cuenta cuántos lectores están activos actualmente
+    sem_t lock;        // binary semaphore (basic lock): protege readers
+    sem_t writelock;   // allow ONE writer/MANY readers
+    int   readers;     // #readers in critical section
 } rwlock_t;
-````
 
-### Visualización del Concepto
+void rwlock_init(rwlock_t *rw) {
+    rw->readers = 0;
+    sem_init(&rw->lock, 0, 1);
+    sem_init(&rw->writelock, 0, 1);
+}
 
-A diferencia de la lista enlazada anterior, aquí permitimos concurrencia real en la lectura:
+void rwlock_acquire_writelock(rwlock_t *rw) { sem_wait(&rw->writelock); }
+void rwlock_release_writelock(rwlock_t *rw) { sem_post(&rw->writelock); }
+
+void rwlock_acquire_readlock(rwlock_t *rw) {
+    sem_wait(&rw->lock);
+    rw->readers++;
+    if (rw->readers == 1)          // first reader gets writelock
+        sem_wait(&rw->writelock);
+    sem_post(&rw->lock);
+}
+
+void rwlock_release_readlock(rwlock_t *rw) {
+    sem_wait(&rw->lock);
+    rw->readers--;
+    if (rw->readers == 0)          // last reader lets it go
+        sem_post(&rw->writelock);
+    sem_post(&rw->lock);
+}
+```
+
+Los dos semáforos tienen papeles distintos:
+
+- **`writelock`** garantiza "un escritor **o** muchos lectores". Un escritor lo toma para escribir. Los lectores lo toman **en grupo**: el **primer** lector que entra lo toma por todos y el **último** que sale lo libera. Mientras haya al menos un lector adentro, ningún escritor puede entrar.
+- **`lock`** es solo un lock básico que protege el contador `readers`, para que dos lectores no lo modifiquen a la vez. No es un "lock de lectura": lo que excluye a los escritores es `writelock`.
 
 ```mermaid
-graph TD
-    subgraph Escenario_Permitido
-        R1((Lector 1)) -->|Lee| BD[(Base de Datos)]
-        R2((Lector 2)) -->|Lee| BD
-        R3((Lector 3)) -->|Lee| BD
-    end
-    
-    subgraph Escenario_Bloqueado
-        W1((Escritor)) -.->|ESPERA| BD
-    end
-    
-    style R1 fill:#ccffcc,stroke:#00aa00
-    style R2 fill:#ccffcc,stroke:#00aa00
-    style R3 fill:#ccffcc,stroke:#00aa00
-    style W1 fill:#ffcccc,stroke:#ff0000
-    style BD fill:#eeeeee,stroke:#333
+sequenceDiagram
+    participant R1
+    participant R2
+    participant W
+    R1->>R1: readers = 1 → primer lector: sem_wait(&writelock)
+    R2->>R2: readers = 2 → no toca writelock
+    Note over R1,R2: R1 y R2 leen a la vez
+    W->>W: sem_wait(&writelock) → duerme
+    R1->>R1: readers = 1
+    R2->>R2: readers = 0 → último lector: sem_post(&writelock)
+    R2-->>W: despierta al escritor
+    W->>W: escribe solo
 ```
 
-## Lógica de Implementación
+## Resultados
 
-La magia de este algoritmo reside en cómo los lectores coordinan el acceso al "permiso de escritura".
-
-### 1\. El Primer Lector (`rwlock_acquire_readlock`)
-
-El **primer** lector que llega tiene la responsabilidad de bloquear a los escritores.
-
-```c
-sem_wait(&lock);
-readers++;
-if (readers == 1)      // ¿Soy el primero?
-    sem_wait(&writelock); // ¡Cierro la puerta a los escritores!
-sem_post(&lock);
+```text
+$ ./rwlock.out 100000 100000 4 2
+W2: escritura terminada en t = 0.126 s
+W1: escritura terminada en t = 0.130 s
+R2: lectura terminada en t = 0.248 s, ultimo valor leido 200000
+R1: lectura terminada en t = 0.252 s, ultimo valor leido 200000
+R4: lectura terminada en t = 0.255 s, ultimo valor leido 200000
+R3: lectura terminada en t = 0.256 s, ultimo valor leido 200000
+contador final: 200000 (esperado 200000)
+lectores simultaneos (maximo): 4
+violaciones de la exclusion: 0
 ```
 
-### 2\. El Último Lector (`rwlock_release_readlock`)
+En 20 ejecuciones con 4 lectores y 2 escritores, el contador fue exacto y no hubo ninguna violación de la exclusión en las 20. El máximo de lectores simultáneos fue 4 en 15 ejecuciones y 3 en las otras 5: **varios lectores estuvieron dentro de la sección crítica a la vez**, que es justamente lo que un lock común no permite.
 
-El **último** lector que sale tiene la responsabilidad de desbloquear a los escritores.
+## El problema de la equidad: inanición (p. 34)
 
-```c
-sem_wait(&lock);
-readers--;
-if (readers == 0)      // ¿Soy el último?
-    sem_post(&writelock); // ¡Abro la puerta para los escritores!
-sem_post(&lock);
+Mientras haya un lector adentro, `writelock` sigue tomado. Si los lectores se suceden sin que `readers` vuelva nunca a 0, un escritor puede esperar indefinidamente: es **inanición** (*starvation*). OSTEP lo señala como la debilidad de esta implementación.
+
+**Con lecturas cortas no se observó.** Con 4 lectores que leen un millón de veces y un escritor que llega a los 50 ms, en las 10 ejecuciones de referencia el escritor terminó a los 0.052 s, mientras que los lectores terminaron entre 1.8 y 2.1 s:
+
+```text
+$ ./rwlock.out 1000000 1000 4 1 50
+W1: escritura terminada en t = 0.052 s
+R1: lectura terminada en t = 1.939 s, ultimo valor leido 1000
+...
 ```
 
-### 3\. El Escritor (`rwlock_acquire_writelock`)
+La lectura (`local = counter`) es tan corta que `readers` vuelve a 0 con mucha frecuencia, y en uno de esos instantes el escritor consigue `writelock`.
 
-Para el escritor, es simple: necesita el `writelock` para él solo. Si hay lectores leyendo (que tomaron el lock en el paso 1), el escritor se duerme.
+**Con lecturas largas sí.** La variante `rwlock-lectura-larga.out` agrega un ciclo vacío dentro de la sección de lectura, de modo que los cuatro lectores se solapan y `readers` casi nunca llega a 0:
 
-## Compilación y Ejecución
-
-Para compilar este ejemplo se requiere la librería `pthread` (para hilos y semáforos).
-
-### 1\. Compilar
-
-```bash
-gcc -o rwlock main.c rwlock.c -Wall -pthread
+```text
+$ ./rwlock-lectura-larga.out 20000 1000 4 1 50
+R2: lectura terminada en t = 0.661 s, ultimo valor leido 0
+R4: lectura terminada en t = 0.664 s, ultimo valor leido 0
+R3: lectura terminada en t = 0.686 s, ultimo valor leido 124
+R1: lectura terminada en t = 0.696 s, ultimo valor leido 124
+W1: escritura terminada en t = 0.696 s
+contador final: 1000 (esperado 1000)
+lectores simultaneos (maximo): 4
+violaciones de la exclusion: 0
 ```
 
-### 2\. Ejecutar
+El escritor llegó a los 50 ms y no terminó sus 1000 escrituras hasta que se fue el último lector, casi 0.7 s después. Dos lectores leyeron 0 en su última lectura: en todo su recorrido el escritor nunca pudo escribir. En las 10 ejecuciones de referencia, el escritor terminó al mismo tiempo que el último lector o después, y en 8 de ellas al menos 3 de los 4 lectores leyeron siempre 0.
 
-El `main.c` usualmente simula un escenario con muchos lectores y pocos escritores para demostrar que los lectores no se bloquean entre sí.
+OSTEP sugiere la idea de una solución: **impedir que entren nuevos lectores cuando hay un escritor esperando**. Las diapositivas (p. 34) remiten a implementaciones más elaboradas. OSTEP también advierte (*Tip: Simple And Dumb Can Be Better*, la "ley de Hill") que un lock de lectores-escritores agrega trabajo y no siempre es más rápido que un lock simple.
 
-```bash
-./rwlock
-```
+## Para probar por cuenta propia
 
-## Análisis de Flujo
+1. Ejecutar `rwlock.out` con `espera_ms` en 0 y en 50. ¿Por qué con 0 el escritor termina aún más rápido?
+2. Modificar `rwlock_acquire_readlock()` para que un lector espere si hay un escritor esperando. (Pista: un semáforo adicional que tome el escritor antes de `writelock` y que cada lector tome y suelte al entrar.) Medir de nuevo con `rwlock-lectura-larga.out`.
 
-El siguiente diagrama explica la lógica crítica del "Primer Lector":
+## Referencias
 
-```mermaid
-graph TD
-    Start([Lector Intenta Leer]) --> A[Adquirir Lock del Contador]
-    A --> B[Incrementar readers++]
-    B --> C{¿readers == 1?}
-    
-    C -->|SÍ: Soy el Primero| D[Adquirir WriteLock]
-    C -->|NO: Ya hay otros| E[Liberar Lock del Contador]
-    
-    D -->|Si Escritor Activo| Wait[ESPERAR]
-    D -->|Si Libre| E
-    Wait --> E
-    
-    E --> Read([LEER DATOS])
-    
-    style C fill:#ffffcc,stroke:#aaaa00
-    style D fill:#ffcccc,stroke:#ff0000
-    style Read fill:#ccffcc,stroke:#00aa00
-```
+- Diapositivas de la clase 18, parte 2, p. 26–34.
+- R. H. Arpaci-Dusseau y A. C. Arpaci-Dusseau, *Operating Systems: Three Easy Pieces*, v1.10, cap. 31: [*Semaphores*](https://pages.cs.wisc.edu/~remzi/OSTEP/threads-sema.pdf), §31.5.
+- A. B. Downey, *The Little Book of Semaphores*, §4.2 (lectores-escritores y la solución sin inanición).
 
-## Advertencia: Inanición de Escritores (Writer Starvation)
-
-Esta implementación específica (conocida como **Reader-Preference** o Preferencia de Lectores) tiene una debilidad importante señalada en el libro:
-
-> **El Problema:** Si siguen llegando lectores continuamente, el contador `readers` nunca llegará a 0.
-> **La Consecuencia:** El escritor nunca obtendrá el `writelock` y sufrirá de **Inanición (Starvation)**. Nunca podrá escribir.
-
-Es ideal para cargas de trabajo donde las lecturas son frecuentes pero hay pausas que permiten escribir, pero peligroso si el flujo de lectura es infinito.
-
-> [!note]
-> **Nota sobre IA**: Este contenido fue elaborado y estructurado con la asistencia de un modelo de inteligencia artificial. Puede contener errores.
+> [!IMPORTANT]
+> **Sobre esta guía.** El código y la guía se elaboraron con asistencia de un modelo de inteligencia artificial y se revisaron contra las diapositivas de la clase y OSTEP. Las salidas son de una ejecución de referencia del 23/11/2026 en la máquina descrita en el [entorno de ejecución](../../../../clase_14/ejemplos/entorno_ejecucion.md) de la clase 14; en otra máquina los tiempos cambian y la inanición puede aparecer con lecturas más cortas o más largas. Si se encuentra alguna diferencia con lo visto en clase, prevalece lo explicado por el docente.

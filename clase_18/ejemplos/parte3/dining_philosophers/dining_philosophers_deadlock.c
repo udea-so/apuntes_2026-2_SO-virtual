@@ -1,3 +1,15 @@
+/*
+ * dining_philosophers_deadlock.c - Filosofos comensales con un semaforo por
+ * palillo; todos toman primero el palillo izquierdo. Solucion ROTA: deadlock.
+ *
+ * Diapositivas (parte 2) p. 35-44; OSTEP cap. 31, §31.6, Fig. 31.15.
+ *
+ * Codigo de ostep-code/threads-sema (adaptado: mensajes y salida por linea).
+ *
+ * Compilacion: gcc -Wall -I. -o dining_philosophers_deadlock.out dining_philosophers_deadlock.c -pthread
+ * Uso:         ./dining_philosophers_deadlock.out <num_loops>
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
@@ -60,9 +72,10 @@ void *philosopher(void *arg) {
                                                                              
 int main(int argc, char *argv[]) {
     if (argc != 2) {
-	fprintf(stderr, "usage: dining_philosophers_deadlock <num_loops>\n");
+	fprintf(stderr, "uso: %s <num_loops>\n", argv[0]);
 	exit(1);
     }
+    setvbuf(stdout, NULL, _IOLBF, 0);   // cada linea sale de inmediato
     printf("dining: started\n");
     
     int i;

@@ -1,27 +1,21 @@
-CC     := gcc
-CFLAGS := -Wall -Werror -I./include -pthread
+# Mutex alrededor de todo el ciclo: deadlock (diapositivas p. 17-21)
+#   make         compila pc_attemp2.out
+#   make traza   compila ademas pc_attemp2-traza.out (-DTRAZA)
+CC      = gcc
+CFLAGS  = -Wall -I. -pthread
+HEADERS = common.h common_threads.h verifica.h
 
-OS     := $(shell uname -s)
-LIBS   := 
-ifeq ($(OS),Linux)
-	LIBS += -pthread
-endif
+.PHONY: all clean traza
 
-SRCS   := pc_attemp2.c 
-		  
-		  		  
-OBJS   := ${SRCS:c=o}
-PROGS  := ${SRCS:.c=}
+all: pc_attemp2.out
 
-.PHONY: all
-all: ${PROGS}
-	rm -f ${OBJS}
+%.out: %.c $(HEADERS)
+	$(CC) $(CFLAGS) -o $@ $<
 
-${PROGS} : % : %.o Makefile
-	${CC} $< -o $@ ${LIBS}
+traza: pc_attemp2-traza.out
+
+pc_attemp2-traza.out: pc_attemp2.c $(HEADERS)
+	$(CC) $(CFLAGS) -DTRAZA -o $@ $<
 
 clean:
-	rm -f ${PROGS} ${OBJS}
-
-%.o: %.c Makefile
-	${CC} ${CFLAGS} -c $<
+	rm -f *.out *.o

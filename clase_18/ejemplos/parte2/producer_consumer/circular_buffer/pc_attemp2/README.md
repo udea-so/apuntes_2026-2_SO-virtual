@@ -1,99 +1,143 @@
-# Problema del Productor-Consumidor: Buffer Circular (Intento 2 - Mutex con Interbloqueo)
+![Built with AI](https://img.shields.io/badge/Built%20with-AI-blue.svg)
 
-## Descripción General
+# Mutex alrededor de todo el ciclo: *deadlock*
 
-Este proyecto (`pc_attemp2`) representa la segunda iteración en la implementación del Buffer Circular. Su objetivo principal es solucionar la **Condición de Carrera** detectada en el *Intento 1* (donde los índices se corrompían por falta de atomicidad).
+Para corregir la *race condition* de [`pc_attemp1`](../pc_attemp1/README.md), la p. 17 de las diapositivas propone agregar exclusión mutua con un tercer semáforo, `mutex`, inicializado en 1. Esta versión lo pone alrededor de **todo** el cuerpo del ciclo, incluido el `sem_wait` sobre `empty` o `full`, y el resultado es un ***deadlock*** (diapositivas de la parte 2, p. 17–21; OSTEP, Fig. 31.11).
 
-Para ello, se introduce un **Mutex** (`pthread_mutex_t`) que protege la sección crítica (el acceso al buffer y la actualización de índices). Sin embargo, la ubicación de este cerrojo introduce un error de diseño fatal conocido como **Interbloqueo (Deadlock)**, que congela la aplicación bajo ciertas condiciones.
+Volver al [índice de la parte 2](../../../README.md).
 
-## Arquitectura del Sistema
+## Relación con las diapositivas y el libro
 
-Se añade un componente de exclusión mutua para serializar el acceso a la estructura de datos compartida.
+| Programa | Qué muestra | Diapositivas | OSTEP cap. 31 (v1.10) |
+|---|---|---|---|
+| [`pc_attemp2.c`](pc_attemp2.c) → `pc_attemp2.out` | Mutex alrededor de todo el ciclo: *deadlock* | p. 17–21 | Fig. 31.11 (*Adding Mutual Exclusion (Incorrectly)*) |
+| `pc_attemp2-traza.out` (`-DTRAZA`) | La misma versión, imprimiendo en qué línea está cada hilo antes de cada `sem_wait` | p. 19–20 | — |
 
-```mermaid
-graph LR
-    subgraph Sincronización
-    M[Mutex Lock]
-    S_E[Semáforo Empty]
-    S_F[Semáforo Full]
-    end
+## Compilación y uso
 
-    P((Productor)) -- 1. Lock Mutex --> M
-    P -- 2. Wait Empty --> S_E
-    P -- 3. Put Data --> B[Buffer]
-    
-    C((Consumidor)) -- 1. Lock Mutex --> M
-    C -- 2. Wait Full --> S_F
-    C -- 3. Get Data --> B
-    
-    note[CRÍTICO: Si se retiene el Mutex <br/>mientras se espera el Semáforo,<br/>ocurre DEADLOCK] -.-> M
+```bash
+make          # genera pc_attemp2.out
+make traza    # genera además pc_attemp2-traza.out
+make clean
+
+./pc_attemp2.out <buffersize> <loops> <productores> <consumidores> [espera_ms]
 ```
 
-## Estructura del Proyecto
+`espera_ms` es opcional (por defecto 0, que es el código de las diapositivas): cada productor espera esa cantidad de milisegundos antes de empezar, de modo que el consumidor corra primero con el buffer vacío. Es el escenario que analizan las p. 19–20.
 
-  * **`pc_circular.c`**: Código fuente modificado que incluye `pthread_mutex_lock` y `unlock`.
-  * **`common.h` / `common_threads.h`**: Librerías auxiliares.
-  * **`Makefile`**: Script de compilación.
+El programa se bloquea, así que conviene ejecutarlo con `timeout` (código de salida 124 si lo tuvo que terminar):
 
-## Mecanismo de Sincronización
+```bash
+timeout 2 ./pc_attemp2.out 10 1000 1 1; echo $?
+```
 
-Además de los semáforos contadores (`empty`, `full`), se emplea un cerrojo binario.
-
-### Nuevas Variables
-
-  * **`pthread_mutex_t mutex`**: Garantiza que solo un hilo a la vez pueda modificar los índices `fill` o `use` y acceder al buffer.
-
-## Lógica de Ejecución (Y el Error)
-
-### La "Solución" Propuesta
-
-Para evitar que dos productores escriban a la vez, se envuelve toda la lógica de inserción/extracción dentro del Mutex:
+## El código (p. 18)
 
 ```c
-// Lógica del Productor en Attempt 2
-sem_wait(&mutex);       // (P0) Adquirir cerrojo
-sem_wait(&empty);       // (P1) Esperar espacio
-put(i);                 // (P2) Sección Crítica
-sem_post(&full);        // (P3) Avisar dato listo
-sem_post(&mutex);       // (P4) Liberar cerrojo
+void *producer(void *arg) {
+    for (i = 0; i < loops; i++) {
+        sem_wait(&mutex);       // Line P0 (NEW LINE)
+        sem_wait(&empty);       // Line P1
+        put(i);                 // Line P2
+        sem_post(&full);        // Line P3
+        sem_post(&mutex);       // Line P4 (NEW LINE)
+    }
+}
+
+void *consumer(void *arg) {
+    while (tmp != -1) {
+        sem_wait(&mutex);       // Line C0 (NEW LINE)
+        sem_wait(&full);        // Line C1
+        tmp = get();            // Line C2
+        sem_post(&empty);       // Line C3
+        sem_post(&mutex);       // Line C4 (NEW LINE)
+        printf(...);
+    }
+}
+
+sem_init(&mutex, 0, 1);         // mutex = 1 (p. 17)
 ```
 
-### Análisis del Fallo: Interbloqueo (Deadlock)
+## El *deadlock* de las diapositivas (p. 19–20)
 
-Esta implementación viola una regla de oro en concurrencia: **Nunca esperar por un evento externo (como un semáforo) mientras se retiene un cerrojo (mutex).**
+Las p. 19–20 y OSTEP describen el caso con un productor y un consumidor, en el que el consumidor corre primero:
 
-#### Escenario de Bloqueo
+1. El consumidor adquiere el mutex (`C0`).
+2. Llama a `sem_wait(&full)` (`C1`). No hay datos, así que se bloquea y libera la CPU, **pero se queda con el mutex**.
+3. El productor llama a `sem_wait(&mutex)` (`P0`) y se bloquea.
 
-Suponga que el buffer está lleno (`empty = 0`, `full = MAX`) y entra el Productor.
+```mermaid
+sequenceDiagram
+    participant C as Consumidor
+    participant P as Productor
+    Note over C,P: mutex = 1, empty = MAX, full = 0
+    C->>C: C0: sem_wait(&mutex) → mutex = 0
+    C->>C: C1: sem_wait(&full) → duerme con el mutex
+    P->>P: P0: sem_wait(&mutex) → duerme
+    Note over C,P: C espera un sem_post(&full) que solo P puede hacer,<br/>y P espera un sem_post(&mutex) que solo C puede hacer
+```
 
-1.  **Productor**: Ejecuta `sem_wait(&mutex)` y adquiere el cerrojo.
-2.  **Productor**: Ejecuta `sem_wait(&empty)`. Como el buffer está lleno, **se duerme**, pero **MANTIENE EL MUTEX CERRADO**.
-3.  **Consumidor**: Intenta entrar para leer y liberar espacio.
-4.  **Consumidor**: Ejecuta `sem_wait(&mutex)`. Como el Productor tiene el mutex, el Consumidor **se bloquea**.
-5.  **Resultado**: El Productor espera espacio que solo el Consumidor puede liberar, y el Consumidor espera el mutex que el Productor tiene retenido. **El sistema se detiene para siempre.**
+Es un ciclo simple: el consumidor **tiene** el mutex y **espera** `full`; el productor podría hacer `sem_post(&full)`, pero **espera** el mutex. Ninguno avanza.
 
-*Este escenario se describe detalladamente en la diapositiva 23 del curso.*
+Con la espera de 100 ms para el productor, la traza reproduce exactamente ese orden:
 
-## Compilación y Ejecución
+```text
+$ timeout 1 ./pc_attemp2-traza.out 10 1000 1 1 100
+C1 C0: sem_wait(&mutex)
+C1 C1: tiene el mutex; sem_wait(&full)
+P1 P0: sem_wait(&mutex)
+```
 
-1.  **Compilar**:
+> [!NOTE]
+> **Sobre la tabla de la p. 20.** En el *deadlock*, `empty` no cambia (el consumidor no lo toca) y `full` queda en −1 en el modelo de OSTEP, porque el consumidor está esperando en él. En Linux `full` se queda en 0: el valor nunca baja de 0 (ver la [parte 1](../../../../parte1/diapositivas/ordering_sem/README.md)).
 
-    ```bash
-    make
-    ```
+## El *deadlock* simétrico: el productor con el mutex
 
-2.  **Ejecutar**:
+Sin la espera, el *deadlock* más frecuente en las ejecuciones de referencia fue otro: el productor se crea primero, llena el buffer y, en la siguiente vuelta, se duerme en `sem_wait(&empty)` **con el mutex tomado**. El consumidor, que es el único que podría vaciar un espacio, se queda en `sem_wait(&mutex)`. Con un buffer de 3 elementos:
 
-    ```bash
-    ./pc_circular
-    ```
+```text
+$ timeout 1 ./pc_attemp2-traza.out 3 10 1 1
+P1 P0: sem_wait(&mutex)
+P1 P1: tiene el mutex; sem_wait(&empty)
+P1 P0: sem_wait(&mutex)
+P1 P1: tiene el mutex; sem_wait(&empty)
+P1 P0: sem_wait(&mutex)
+P1 P1: tiene el mutex; sem_wait(&empty)
+P1 P0: sem_wait(&mutex)
+P1 P1: tiene el mutex; sem_wait(&empty)
+C1 C0: sem_wait(&mutex)
+```
 
-    *(Nota: Es muy probable que el programa se congele inmediatamente o tras llenar el buffer por primera vez).*
+El productor puso tres datos (las tres primeras vueltas) y en la cuarta se durmió con el buffer lleno. El consumidor nunca consiguió el mutex. Es el mismo error visto desde el otro lado: **un hilo se duerme en un semáforo mientras sostiene el mutex que el otro necesita para despertarlo**.
 
-## Actividades Académicas
+Conteo en 50 ejecuciones de cada escenario, clasificadas según el último estado de cada hilo en la traza:
 
-1.  **Observación**: Ejecute el programa y observe cómo deja de imprimir mensajes inesperadamente. Use `Ctrl+C` para terminarlo.
-2.  **Diagnóstico**: Utilice herramientas como `helgrind` (si está disponible) o depuración visual para confirmar que ambos hilos están en estado de espera (`waiting`).
-3.  **Reflexión**: ¿Cómo reordenaría las instrucciones `sem_wait` para que el hilo pueda esperar el semáforo *sin* bloquear el acceso al Mutex para los demás? (Pista: Esto conduce al *Intento 3*).
+| Ejecución | Terminó | *Deadlock*: el productor tiene el mutex y espera `empty` | *Deadlock*: el consumidor tiene el mutex y espera `full` |
+|---|---|---|---|
+| `10 1000 1 1` | 0 | 39 | 11 |
+| `10 1000 1 1 100` (el productor espera 100 ms) | 0 | 0 | 50 |
+| `1 1000 1 1` (buffer de 1) | 0 | 46 | 4 |
+| `10 1000 2 2` | 0 | 37 | 13 |
 
+Ninguna ejecución terminó: el error no depende de un orden poco frecuente, sino que ocurre en cuanto el buffer se llena o se vacía. Sin la traza, el programa simplemente no imprime nada:
 
+```text
+$ timeout 2 ./pc_attemp2.out 10 1000 1 1 | wc -l; echo ${PIPESTATUS[0]}
+0
+124
+```
+
+**Solución (p. 22–23):** reducir el ámbito del lock. El mutex debe envolver solo `put()` y `get()`, que es la sección crítica, y los `sem_wait` sobre `empty` y `full` deben quedar por fuera: ver [`pc_work`](../pc_work/README.md).
+
+## Para probar por cuenta propia
+
+1. ¿Por qué con `espera_ms` siempre se da el caso del consumidor, y sin ella casi siempre el del productor?
+2. Cambiar solo el consumidor a la versión correcta y dejar el productor como está. ¿Sigue habiendo *deadlock*? ¿En qué caso?
+
+## Referencias
+
+- Diapositivas de la clase 18, parte 2, p. 17–23.
+- R. H. Arpaci-Dusseau y A. C. Arpaci-Dusseau, *Operating Systems: Three Easy Pieces*, v1.10, cap. 31: [*Semaphores*](https://pages.cs.wisc.edu/~remzi/OSTEP/threads-sema.pdf), §31.4 (*Avoiding Deadlock*).
+
+> [!IMPORTANT]
+> **Sobre esta guía.** El código y la guía se elaboraron con asistencia de un modelo de inteligencia artificial y se revisaron contra las diapositivas de la clase y OSTEP. Las salidas son de una ejecución de referencia del 23/11/2026 en la máquina descrita en el [entorno de ejecución](../../../../../../clase_14/ejemplos/entorno_ejecucion.md) de la clase 14; en otra máquina la proporción entre los dos tipos de *deadlock* cambia. Si se encuentra alguna diferencia con lo visto en clase, prevalece lo explicado por el docente.

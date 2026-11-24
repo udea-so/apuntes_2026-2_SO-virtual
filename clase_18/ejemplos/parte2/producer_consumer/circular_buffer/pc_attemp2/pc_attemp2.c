@@ -1,134 +1,155 @@
+/*
+ * pc_attemp2.c - Productor/consumidor con buffer circular, empty, full y un
+ * semaforo binario mutex que envuelve TODO el cuerpo del ciclo, incluido el
+ * sem_wait sobre empty/full. Solucion ROTA: deadlock.
+ *
+ * Diapositivas (parte 2) p. 17-21; OSTEP cap. 31, Fig. 31.11
+ * (Adding Mutual Exclusion (Incorrectly)).
+ *
+ * Compilacion: gcc -Wall -I. -o pc_attemp2.out pc_attemp2.c -pthread
+ * Con traza:   gcc -Wall -I. -DTRAZA -o pc_attemp2-traza.out pc_attemp2.c -pthread
+ * Uso:         ./pc_attemp2.out <buffersize> <loops> <productores> <consumidores> [espera_ms]
+ *
+ *   espera_ms (opcional, por defecto 0): milisegundos que cada productor espera
+ *   antes de empezar. Hace que el consumidor corra primero, con el buffer
+ *   vacio: es el escenario de las p. 19-20 y de OSTEP.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
-#include <pthread.h>
 #include <unistd.h>
+#include <pthread.h>
+#include <semaphore.h>
 #include "common.h"
 #include "common_threads.h"
-#include <semaphore.h>
+#include "verifica.h"
 
-/** ----------------------- Variables globales ------------------------- **/
-#define MAX 10
-#define CMAX 10
-#define PMAX 10
+// Traza opcional (compilar con -DTRAZA): cada hilo imprime en que linea esta
+// antes de cada sem_wait, con las etiquetas P0-P4 / C0-C4 de las diapositivas.
+#ifdef TRAZA
+#define TRAZA_PRINTF(...) printf(__VA_ARGS__)
+#else
+#define TRAZA_PRINTF(...)
+#endif
 
-int consumers;
+int max;                  // MAX en las diapositivas: tamanio del buffer
+int loops;
 int producers;
+int consumers;
+int espera_ms = 0;
 
-int buffer[MAX];
+/* ---------------------- Buffer circular (p. 10) --------------------------- */
+
+int *buffer;
 int fill = 0;
-int use = 0;
-int loops = 0;
+int use  = 0;
 
-/** ----------------------- Variables de sincronizacion ------------------------- **/
-// Semaforos
-sem_t empty;
-sem_t full;
-sem_t mutex;
-/** ------------------------------------------------------------------------------ **/
-
-/** --------------------------- Funciones del buffer ----------------------------- **/
-void put(int value)
-{
-  buffer[fill] = value;    // Line F1
-  fill = (fill + 1) % MAX; // Line F2
+void put(int value) {
+    buffer[fill] = value;          // Line F1
+    fill = (fill + 1) % max;       // Line F2
 }
 
-int get()
-{
-  int tmp = buffer[use]; // Line G1
-  use = (use + 1) % MAX; // Line G2
-  return tmp;
+int get(void) {
+    int tmp = buffer[use];         // Line G1
+    use = (use + 1) % max;         // Line G2
+    return tmp;
 }
 
-/** ------------------- Funciones del productor y consumidor ---------------------- **/
+/* ------------------------------ Semaforos --------------------------------- */
 
-void *producer(void *arg) {  
-  int num_producer = *((int *)arg) + 1;
-  printf("Begin -> Producer %d\n", num_producer);
-  int i;
-  for (i = 0; i < loops; i++)
-  {
-    sem_wait(&mutex); // Line P0 (NEW LINE)
-    sem_wait(&empty); // Line P1
-    put(i); // Line P2
-    sem_post(&full); // Line P3
-    sem_post(&mutex); // Line P4 (NEW LINE)
-    printf("P%d: B[%d] <- %d\n", num_producer , fill, i);
-  }
+sem_t empty;              // espacios vacios: empieza en MAX
+sem_t full;               // espacios llenos: empieza en 0
+sem_t mutex;              // semaforo binario: empieza en 1
 
-  // end case
-  for (i = 0; i < consumers; i++)
-  {
-    sem_wait(&mutex);
-    sem_wait(&empty);
-    put(-1);
-    sem_post(&full);
-    sem_post(&mutex); 
-    printf("P%d: B[%d] <- %d\n", num_producer , fill, -1);
-  }
-  printf("End -> Producer %d\n", num_producer);
-  return NULL;
+/* ------------------------- Productor y consumidor ------------------------- */
+
+void *producer(void *arg) {
+    int id = *(int *) arg;      // 1, 2, ...; solo lo usa la traza
+    (void) id;
+    int i;
+    if (espera_ms > 0)
+        usleep(espera_ms * 1000);   // deja que el consumidor corra primero
+    for (i = 0; i < loops; i++) {
+        TRAZA_PRINTF("P%d P0: sem_wait(&mutex)\n", id);
+        sem_wait(&mutex);       // Line P0 (NEW LINE)
+        TRAZA_PRINTF("P%d P1: tiene el mutex; sem_wait(&empty)\n", id);
+        sem_wait(&empty);       // Line P1
+        put(i);                 // Line P2
+        sem_post(&full);        // Line P3
+        sem_post(&mutex);       // Line P4 (NEW LINE)
+    }
+    return NULL;
 }
 
-void *consumer(void *arg)
-{
-  int num_consumer = *((int *)arg) + 1;
-  printf("Begin -> Consumer %d\n", num_consumer);
-  int tmp = 0;
-  while (tmp != -1)
-  {
-    sem_wait(&mutex); // Line C0 (NEW LINE)
-    sem_wait(&full); // Line C1
-    tmp = get(); // Line C2
-    sem_post(&empty); // Line C3
-    sem_post(&mutex); // Line C4 (NEW LINE)
-    printf("[%d] <- %d\n", num_consumer, tmp);
-  }
-  printf("Begin -> Consumer %d\n", num_consumer);
-  return NULL;
+void *consumer(void *arg) {
+    consumidor_t *c = (consumidor_t *) arg;
+    int tmp = 0;
+    while (tmp != -1) {
+        TRAZA_PRINTF("C%d C0: sem_wait(&mutex)\n", c->id);
+        sem_wait(&mutex);       // Line C0 (NEW LINE)
+        TRAZA_PRINTF("C%d C1: tiene el mutex; sem_wait(&full)\n", c->id);
+        sem_wait(&full);        // Line C1
+        tmp = get();            // Line C2
+        sem_post(&empty);       // Line C3
+        sem_post(&mutex);       // Line C4 (NEW LINE)
+        printf("C%d <- %d\n", c->id, tmp);
+        registra(c, tmp);
+    }
+    return NULL;
 }
 
-/** ----------------------- Funcion Main -------------------------- **/
+/* ---------------------------------- main ---------------------------------- */
+
 int main(int argc, char *argv[]) {
-  /**
-   ----------- Pruebas --------
-   1. consumers = 1; consumers: 1; loops = 20; MAX = 1 -> (No OK)
-  */
+    if (argc != 5 && argc != 6) {
+        fprintf(stderr, "uso: %s <buffersize> <loops> <productores> <consumidores> [espera_ms]\n", argv[0]);
+        exit(1);
+    }
+    max       = atoi(argv[1]);
+    loops     = atoi(argv[2]);
+    producers = atoi(argv[3]);
+    consumers = atoi(argv[4]);
+    if (argc == 6)
+        espera_ms = atoi(argv[5]);
+    assert(max >= 1 && loops >= 0);
+    assert(producers >= 1 && producers <= PMAX);
+    assert(consumers >= 1 && consumers <= CMAX);
+    setvbuf(stdout, NULL, _IOLBF, 0);   // cada linea sale de inmediato (ver la guia)
 
-  // char id_producer = 'a';
-  // char id_consumer = 'a';
+    buffer = calloc(max, sizeof(int));
+    assert(buffer != NULL);
 
-  int i;
-  loops = 50;    // Cambiar
-  producers = 1;  // Cambiar 
-  consumers = 1;  // Cambiar
+    Sem_init(&empty, max);  // MAX espacios vacios
+    Sem_init(&full, 0);     // 0 espacios llenos
+    Sem_init(&mutex, 1);    // mutex = 1
 
-  assert(consumers <= CMAX);
-  assert(producers <= PMAX);
-  printf("Parent: begin\n");
+    pthread_t pid[PMAX], cid[CMAX];
+    int ids[PMAX];
+    consumidor_t c[CMAX];
+    int i;
+    for (i = 0; i < producers; i++) {
+        ids[i] = i + 1;
+        Pthread_create(&pid[i], NULL, producer, &ids[i]);
+    }
+    for (i = 0; i < consumers; i++) {
+        consumidor_init(&c[i], i + 1, loops);
+        Pthread_create(&cid[i], NULL, consumer, &c[i]);
+    }
+    for (i = 0; i < producers; i++)
+        Pthread_join(pid[i], NULL);
 
-  // -------------  Inicializacion de los semaforos  --------------
-  sem_init(&empty, 0, MAX); // MAX are empty
-  sem_init(&full, 0, 0);    // 0 are full
-  sem_init(&mutex , 0 , 1);// mutex = 1
-  // ----------------- Declaracion de los Hilos  -----------------
-  pthread_t pid[PMAX], cid[CMAX];
-  // ----------------- Inicializacion -----------------
-  for (i = 0; i < producers; i++) {
-    Pthread_create(&pid[i], NULL, producer, (void*)&i);
-  }
-  for (i = 0; i < consumers; i++) {
-    Pthread_create(&cid[i], NULL, consumer, (void*)&i);
-  }
+    // Marca de fin: un -1 por consumidor, con la misma sincronizacion del productor.
+    for (i = 0; i < consumers; i++) {
+        sem_wait(&mutex);
+        sem_wait(&empty);
+        put(-1);
+        sem_post(&full);
+        sem_post(&mutex);
+    }
+    for (i = 0; i < consumers; i++)
+        Pthread_join(cid[i], NULL);
 
-  // -----------------  Espera  -----------------
-  for (i = 0; i < producers; i++) {
-    Pthread_join(pid[i], NULL);
-  }
-  for (i = 0; i < consumers; i++) {
-    Pthread_join(cid[i], NULL);
-  }
-
-  printf("Parent: end\n");
-  return 0;
+    verifica(c, consumers, producers, loops);
+    free(buffer);
+    return 0;
 }

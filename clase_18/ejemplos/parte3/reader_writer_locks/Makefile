@@ -1,26 +1,20 @@
-CC     := gcc
-CFLAGS := -Wall -Werror -I./include -pthread
+# Lock de lectores-escritores (diapositivas p. 26-34)
+#   make         compila rwlock.out y rwlock-lectura-larga.out
+#   make clean   borra los ejecutables
+CC      = gcc
+CFLAGS  = -Wall -I. -pthread
+HEADERS = common.h common_threads.h
 
-OS     := $(shell uname -s)
-LIBS   := 
-ifeq ($(OS),Linux)
-	LIBS += -pthread
-endif
+.PHONY: all clean
 
-SRCS   := rwlock.c
-		  		  
-OBJS   := ${SRCS:c=o}
-PROGS  := ${SRCS:.c=}
+all: rwlock.out rwlock-lectura-larga.out
 
-.PHONY: all
-all: ${PROGS}
-	rm -f ${OBJS}
+rwlock.out: rwlock.c $(HEADERS)
+	$(CC) $(CFLAGS) -o $@ $<
 
-${PROGS} : % : %.o Makefile
-	${CC} $< -o $@ ${LIBS}
+# Variante con lecturas largas: muestra la inanicion de los escritores (p. 34)
+rwlock-lectura-larga.out: rwlock.c $(HEADERS)
+	$(CC) $(CFLAGS) -DLECTURA_LARGA -o $@ $<
 
 clean:
-	rm -f ${PROGS} ${OBJS}
-
-%.o: %.c Makefile
-	${CC} ${CFLAGS} -c $<
+	rm -f *.out *.o

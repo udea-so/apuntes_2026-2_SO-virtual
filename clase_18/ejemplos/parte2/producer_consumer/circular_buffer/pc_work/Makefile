@@ -1,26 +1,14 @@
-CC     := gcc
-CFLAGS := -Wall -Werror -I./include -pthread
+# Mutex solo alrededor de put/get: solucion correcta (diapositivas p. 22-25)
+CC      = gcc
+CFLAGS  = -Wall -I. -pthread
+HEADERS = common.h common_threads.h verifica.h
 
-OS     := $(shell uname -s)
-LIBS   := 
-ifeq ($(OS),Linux)
-	LIBS += -pthread
-endif
+.PHONY: all clean
 
-SRCS   := pc_work.c
-		  		  
-OBJS   := ${SRCS:c=o}
-PROGS  := ${SRCS:.c=}
+all: pc_work.out
 
-.PHONY: all
-all: ${PROGS}
-	rm -f ${OBJS}
-
-${PROGS} : % : %.o Makefile
-	${CC} $< -o $@ ${LIBS}
+%.out: %.c $(HEADERS)
+	$(CC) $(CFLAGS) -o $@ $<
 
 clean:
-	rm -f ${PROGS} ${OBJS}
-
-%.o: %.c Makefile
-	${CC} ${CFLAGS} -c $<
+	rm -f *.out *.o

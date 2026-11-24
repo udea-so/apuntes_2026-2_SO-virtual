@@ -1,26 +1,14 @@
-CC     := gcc
-CFLAGS := -Wall -Werror -I./include -pthread
+# Codigo original de OSTEP (ostep-code/threads-sema/producer_consumer_works.c)
+CC      = gcc
+CFLAGS  = -Wall -I. -pthread
+HEADERS = common.h common_threads.h
 
-OS     := $(shell uname -s)
-LIBS   := 
-ifeq ($(OS),Linux)
-	LIBS += -pthread
-endif
+.PHONY: all clean
 
-SRCS   := producer_consumer_works.c
-		  		  
-OBJS   := ${SRCS:c=o}
-PROGS  := ${SRCS:.c=}
+all: producer_consumer_works.out
 
-.PHONY: all
-all: ${PROGS}
-	rm -f ${OBJS}
-
-${PROGS} : % : %.o Makefile
-	${CC} $< -o $@ ${LIBS}
+%.out: %.c $(HEADERS)
+	$(CC) $(CFLAGS) -o $@ $<
 
 clean:
-	rm -f ${PROGS} ${OBJS}
-
-%.o: %.c Makefile
-	${CC} ${CFLAGS} -c $<
+	rm -f *.out *.o

@@ -1,26 +1,14 @@
-CC     := gcc
-CFLAGS := -Wall -Werror -I./include -pthread
+# Buffer circular sin mutex: race condition (diapositivas p. 13-16)
+CC      = gcc
+CFLAGS  = -Wall -I. -pthread
+HEADERS = common.h common_threads.h verifica.h
 
-OS     := $(shell uname -s)
-LIBS   := 
-ifeq ($(OS),Linux)
-	LIBS += -pthread
-endif
+.PHONY: all clean
 
-SRCS   := pc_attemp1.c 
-		  		  
-OBJS   := ${SRCS:c=o}
-PROGS  := ${SRCS:.c=}
+all: pc_attemp1.out
 
-.PHONY: all
-all: ${PROGS}
-	rm -f ${OBJS}
-
-${PROGS} : % : %.o Makefile
-	${CC} $< -o $@ ${LIBS}
+%.out: %.c $(HEADERS)
+	$(CC) $(CFLAGS) -o $@ $<
 
 clean:
-	rm -f ${PROGS} ${OBJS}
-
-%.o: %.c Makefile
-	${CC} ${CFLAGS} -c $<
+	rm -f *.out *.o

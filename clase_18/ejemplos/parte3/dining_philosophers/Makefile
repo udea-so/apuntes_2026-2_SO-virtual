@@ -1,31 +1,14 @@
-CC     := gcc
-CFLAGS := -Wall -Werror -pthread
+# Filosofos comensales (diapositivas p. 35-46)
+CC      = gcc
+CFLAGS  = -Wall -I. -pthread
+HEADERS = common.h common_threads.h
 
-OS     := $(shell uname -s)
-LIBS   := 
-ifeq ($(OS),Linux)
-	LIBS += -pthread
-endif
+.PHONY: all clean
 
+all: dining_philosophers_deadlock.out dining_philosophers_deadlock_print.out      dining_philosophers_no_deadlock.out dining_philosophers_no_deadlock_print.out
 
-
-SRCS   := dining_philosophers_deadlock.c \
-	dining_philosophers_deadlock_print.c \
-	dining_philosophers_no_deadlock.c \
-	dining_philosophers_no_deadlock_print.c 
-		  		  
-OBJS   := ${SRCS:c=o}
-PROGS  := ${SRCS:.c=}
-
-.PHONY: all
-all: ${PROGS}
-	rm -f ${OBJS}
-
-${PROGS} : % : %.o Makefile
-	${CC} $< -o $@ ${LIBS}
+%.out: %.c $(HEADERS)
+	$(CC) $(CFLAGS) -o $@ $<
 
 clean:
-	rm -f ${PROGS} ${OBJS}
-
-%.o: %.c Makefile
-	${CC} ${CFLAGS} -c $<
+	rm -f *.out *.o

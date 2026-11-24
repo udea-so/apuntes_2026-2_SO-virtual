@@ -1,145 +1,202 @@
-# La Cena de los Filósofos (The Dining Philosophers)
+![Built with AI](https://img.shields.io/badge/Built%20with-AI-blue.svg)
 
-Este directorio contiene la implementación del clásico problema de sincronización **"Dining Philosophers"**, basado en la Sección 31.6 del libro *Operating Systems: Three Easy Pieces* (Remzi).
+# Filósofos comensales
 
-El objetivo es demostrar problemas complejos de concurrencia como el **Deadlock** (Bloqueo Mutuo) y la **Inanición** (Starvation), y cómo resolverlos utilizando semáforos y ordenamiento de recursos.
+El problema de los **filósofos comensales** (*dining philosophers*), planteado y resuelto por Dijkstra, es uno de los problemas de concurrencia más conocidos (diapositivas de la parte 2, p. 35–46; OSTEP §31.6). Su utilidad práctica es poca, pero muestra con claridad cómo se produce un ***deadlock*** y cómo se evita.
 
-## Descripción del Escenario
+Volver al [índice de la parte 3](../README.md).
 
-* **5 Filósofos** se sientan alrededor de una mesa redonda.
-* Pasan su vida alternando entre dos estados: **Pensar** y **Comer**.
-* Para comer, un filósofo necesita **dos tenedores**: el que está a su izquierda y el que está a su derecha.
-* **Restricción:** Hay solo 5 tenedores en total (uno entre cada par de filósofos). Si un filósofo toma un tenedor, su vecino no puede usarlo.
+## Relación con las diapositivas y el libro
 
-### Estructura Lógica
+| Programa | Qué muestra | Diapositivas | OSTEP cap. 31 (v1.10) |
+|---|---|---|---|
+| [`dining_philosophers_deadlock.c`](dining_philosophers_deadlock.c) | Todos los filósofos toman primero el palillo izquierdo: *deadlock* | p. 40–44 | Fig. 31.15 |
+| [`dining_philosophers_deadlock_print.c`](dining_philosophers_deadlock_print.c) | La misma versión, imprimiendo lo que hace cada filósofo | p. 42–44 | Fig. 31.15 |
+| [`dining_philosophers_no_deadlock.c`](dining_philosophers_no_deadlock.c) | El filósofo 4 toma los palillos en el orden contrario: sin *deadlock* | p. 45–46 | Fig. 31.16 |
+| [`dining_philosophers_no_deadlock_print.c`](dining_philosophers_no_deadlock_print.c) | La misma versión, imprimiendo lo que hace cada filósofo | p. 45–46 | Fig. 31.16 |
 
-Cada "tenedor" se representa como un **Semáforo Binario** (o Mutex).
+Los cuatro programas vienen de [`ostep-code/threads-sema`](https://github.com/remzi-arpacidusseau/ostep-code/tree/master/threads-sema); solo se corrigieron mensajes y se hizo que cada línea salga de inmediato.
 
-```mermaid
-graph TD
-    P1((P1)) --- F1[Tenedor 1]
-    F1 --- P2((P2))
-    P2 --- F2[Tenedor 2]
-    F2 --- P3((P3))
-    P3 --- F3[Tenedor 3]
-    F3 --- P4((P4))
-    P4 --- F4[Tenedor 4]
-    F4 --- P5((P5))
-    P5 --- F5[Tenedor 5]
-    F5 --- P1
-    
-    style P1 fill:#e1f5fe,stroke:#01579b
-    style P2 fill:#e1f5fe,stroke:#01579b
-    style P3 fill:#e1f5fe,stroke:#01579b
-    style P4 fill:#e1f5fe,stroke:#01579b
-    style P5 fill:#e1f5fe,stroke:#01579b
-    style F1 fill:#fff9c4,stroke:#fbc02d
-    style F2 fill:#fff9c4,stroke:#fbc02d
-    style F3 fill:#fff9c4,stroke:#fbc02d
-    style F4 fill:#fff9c4,stroke:#fbc02d
-    style F5 fill:#fff9c4,stroke:#fbc02d
+## Compilación y uso
+
+```bash
+make          # genera los cuatro ejecutables .out
+make clean
+
+./dining_philosophers_deadlock.out <num_loops>      # cada filósofo come <num_loops> veces
 ```
 
+## El problema (p. 35–39)
 
-## El Problema: Deadlock (Abrazo Mortal)
-
-Si implementamos una lógica ingenua donde todos los filósofos actúan igual:
-
-1.  Tomar tenedor izquierdo.
-2.  Tomar tenedor derecho.
-3.  Comer.
-
-...y todos intentan comer al mismo tiempo, ocurre lo siguiente:
-
-  * Todos toman su tenedor izquierdo simultáneamente.
-  * Todos esperan que se libere el tenedor derecho.
-  * **Resultado:** Nadie come, nadie suelta el tenedor. El sistema se detiene para siempre.
-
-## La Solución (The Broken Dependency)
-
-La solución implementada (sugerida por Remzi) consiste en **romper el ciclo de dependencia** cambiando el orden de adquisición de recursos para al menos uno de los filósofos.
-
-  * **Filósofos 0 al 3:** Toman Izquierda (`Left`) y luego Derecha (`Right`).
-  * **Filósofo 4 (El último):** Toma Derecha (`Right`) y luego Izquierda (`Left`).
-
-### Pseudocódigo de la Solución
+Cinco filósofos están sentados alrededor de una mesa y entre cada par hay un palillo (cinco en total). Cada filósofo alterna entre pensar, que no necesita palillos, y comer, que necesita **los dos** palillos que tiene a los lados. Cada palillo es un semáforo binario, inicializado en 1 (`sem_t forks[5]`).
 
 ```c
-void *philosopher(void *arg) {
-    int p = (int) arg; // ID del filósofo
-    
-    if (p == 4) { // El último rompe el ciclo
-        sem_wait(&forks[right(p)]);
-        sem_wait(&forks[left(p)]);
-    } else {      // Los demás siguen el orden estándar
-        sem_wait(&forks[left(p)]);
-        sem_wait(&forks[right(p)]);
-    }
-    
+while (1) {               // ciclo de cada filósofo (p. 36)
+    think();
+    get_forks(p);
     eat();
-    
+    put_forks(p);
+}
+
+int left(int p)  { return p; }              // palillo de la izquierda
+int right(int p) { return (p + 1) % 5; }    // palillo de la derecha
+```
+
+```mermaid
+%%{init: {"themeVariables": {"fontFamily": "Arial, Helvetica, sans-serif"}}}%%
+flowchart LR
+    P0((P0)) --- f1[f1] --- P1((P1)) --- f2[f2] --- P2((P2)) --- f3[f3] --- P3((P3)) --- f4[f4] --- P4((P4)) --- f0[f0] --- P0
+```
+
+El filósofo `p` tiene a su izquierda el palillo `p` y a su derecha el palillo `(p + 1) % 5`. El `% 5` hace que el filósofo 4 tome a su derecha el palillo 0 (OSTEP, Fig. 31.14). Los objetivos son tres (p. 37): que no haya ***deadlock***, que ningún filósofo se quede sin comer (sin **inanición**) y la **máxima concurrencia**.
+
+## La solución simple: *deadlock* (p. 40–44)
+
+```c
+void get_forks(int p) {
+    sem_wait(&forks[left(p)]);
+    sem_wait(&forks[right(p)]);
+}
+
+void put_forks(int p) {
     sem_post(&forks[left(p)]);
     sem_post(&forks[right(p)]);
 }
 ```
 
-### Diagrama de Flujo de la Solución
+Si cada filósofo toma su palillo izquierdo antes de que alguno alcance a tomar el derecho, todos quedan con un palillo en la mano esperando el del vecino, que nunca lo va a soltar:
 
 ```mermaid
-graph TD
-    Start([Filósofo quiere comer]) --> Check{¿Soy el último?}
-    
-    Check -->|NO| L1[Tomar Izquierda]
-    L1 --> R1[Tomar Derecha]
-    
-    Check -->|SÍ| R2[Tomar Derecha]
-    R2 --> L2[Tomar Izquierda]
-    
-    R1 --> Comer([COMER])
-    L2 --> Comer
-    
-    Comer --> Soltar[Soltar ambos tenedores]
-    
-    style Check fill:#ffcc00,stroke:#333
-    style Comer fill:#ccffcc,stroke:#00aa00
+%%{init: {"themeVariables": {"fontFamily": "Arial, Helvetica, sans-serif"}}}%%
+flowchart LR
+    P0((P0)) -->|"espera f1"| P1((P1))
+    P1 -->|"espera f2"| P2((P2))
+    P2 -->|"espera f3"| P3((P3))
+    P3 -->|"espera f4"| P4((P4))
+    P4 -->|"espera f0"| P0
+
+    style P0 fill:#ffcccc,stroke:#ff0000
+    style P1 fill:#ffcccc,stroke:#ff0000
+    style P2 fill:#ffcccc,stroke:#ff0000
+    style P3 fill:#ffcccc,stroke:#ff0000
+    style P4 fill:#ffcccc,stroke:#ff0000
 ```
 
-## Compilación y Ejecución
-
-Para facilitar la compilación de los múltiples archivos involucrados, se incluye un archivo `Makefile`.
-
-### 1\. Compilar
-
-Simplemente ejecuta el comando `make` en la terminal dentro de esta carpeta. El `Makefile` se encargará de enlazar las librerías necesarias (`-pthread`).
+Cada flecha va de un filósofo al vecino que tiene el palillo que necesita. El ciclo `P0 → P1 → P2 → P3 → P4 → P0` es una **espera circular**: ninguno puede avanzar.
 
 ```bash
-make
+timeout 2 ./dining_philosophers_deadlock.out 10000; echo $?
 ```
 
-### 2\. Ejecutar
+| Ejecución | Repeticiones | Quedó en *deadlock* |
+|---|---|---|
+| `./dining_philosophers_deadlock.out 10000` | 50 | 48 |
+| `./dining_philosophers_deadlock.out 10` | 50 | 0 |
 
-Una vez compilado, se generará el ejecutable (generalmente llamado `dining` o `main`).
+Con 10 000 comidas por filósofo, el programa quedó en *deadlock* en 48 de 50 ejecuciones; con solo 10 comidas, en ninguna. El error es el mismo: lo que cambia es cuántas veces se presenta la oportunidad de que los cinco tomen su palillo izquierdo a la vez. Que un programa concurrente pase las pruebas cortas no demuestra que sea correcto.
 
-```bash
-./dining_philosophers
+La versión `_print` muestra cada paso; cada filósofo escribe en su propia columna. Las últimas líneas de una ejecución que quedó bloqueada:
+
+```text
+                                        4: done
+                                        4: think
+                    2: try 2
+                              3: try 3
+0: try 1
+          1: try 2
+                                        4: try 4
+                    2: try 3
+                              3: try 4
+                                        4: try 0
 ```
 
-*(Verifica el nombre exacto del ejecutable generado por el Makefile haciendo un `ls`).*
+Cada filósofo terminó en `try` de su palillo **derecho**: el 0 espera el 1, el 1 el 2, el 2 el 3, el 3 el 4 y el 4 el 0. Antes, cada uno había tomado su palillo izquierdo (el 0 el 0, el 1 el 1, …). Es exactamente el ciclo de la figura, y es lo que muestran las diapositivas p. 43–44 con `philosopher #k getfork # k`.
 
-### 3\. Limpiar
+## La solución: cambiar el orden de un filósofo (p. 45–46)
 
-Para borrar los archivos binarios y objetos generados:
+Dijkstra resolvió el problema haciendo que **un** filósofo, el 4, tome los palillos en el orden contrario (OSTEP, Fig. 31.16):
 
-```bash
-make clean
+```c
+void get_forks(int p) {
+    if (p == 4) {
+        sem_wait(&forks[right(p)]);
+        sem_wait(&forks[left(p)]);
+    } else {
+        sem_wait(&forks[left(p)]);
+        sem_wait(&forks[right(p)]);
+    }
+}
 ```
 
-## Qué observar durante la ejecución
+El filósofo 4 intenta primero el palillo 0, el mismo que el filósofo 0 toma primero. Uno de los dos lo obtiene y el otro se queda esperando **sin sostener ningún palillo**, así que el ciclo de la figura anterior ya no se puede cerrar: siempre hay al menos un filósofo que puede comer y luego soltar sus palillos.
 
-Al correr el programa, deberías ver mensajes en la consola indicando qué filósofo está comiendo. Gracias a la solución implementada:
+| Ejecución | Repeticiones | Quedó en *deadlock* |
+|---|---|---|
+| `./dining_philosophers_no_deadlock.out 10000` | 50 | 0 |
 
-1.  El programa **no se congela** (No hay Deadlock).
-2.  Eventualmente, todos los filósofos logran comer (puedes verificar que no haya Starvation si la ejecución es larga).
+```text
+$ time ./dining_philosophers_no_deadlock.out 100000
+dining: started
+dining: finished
 
-> [!note]
-> **Nota sobre IA**: Este contenido fue elaborado y estructurado con la asistencia de un modelo de inteligencia artificial. Puede contener errores.
+real	0m0.066s
+user	0m0.016s
+sys	0m0.109s
+```
+
+Con un ciclo de cada filósofo:
+
+```text
+$ ./dining_philosophers_no_deadlock_print.out 1
+dining: started
+0: start
+0: think
+0: try 0
+0: try 1
+0: eat
+0: done
+                    2: start
+                    2: think
+                    2: try 2
+                    2: try 3
+                    2: eat
+                    2: done
+                              3: start
+                              3: think
+          1: start
+          1: think
+          1: try 1
+          1: try 2
+          1: eat
+          1: done
+                                        4: start
+                                        4: think
+                                        4: try 0
+                                        4: try 4
+                                        4: eat
+                                        4: done
+                              3: try 3
+                              3: try 4
+                              3: eat
+                              3: done
+dining: finished
+```
+
+Hay otras soluciones (por ejemplo, permitir que solo cuatro filósofos intenten comer a la vez, con un semáforo inicializado en 4). Las diapositivas (p. 46) mencionan otros problemas clásicos de sincronización: el de los fumadores y el del barbero dormilón.
+
+> [!NOTE]
+> **Complemento: las cuatro condiciones del *deadlock*.** Para que ocurra un *deadlock* deben darse a la vez cuatro condiciones: exclusión mutua (un palillo lo usa un filósofo a la vez), retener y esperar (un filósofo sostiene un palillo mientras espera el otro), no expropiación (nadie le quita un palillo a otro) y espera circular. La solución de Dijkstra elimina la **espera circular** imponiendo un orden. OSTEP estudia estas condiciones en el cap. 32, *Common Concurrency Problems*.
+
+## Para probar por cuenta propia
+
+1. Cambiar `get_forks()` para que **todos** los filósofos pares tomen primero el palillo derecho y los impares el izquierdo. ¿Hay *deadlock*?
+2. Agregar un semáforo `mesa` inicializado en 4 y hacer `sem_wait(&mesa)` antes de `get_forks()` y `sem_post(&mesa)` después de `put_forks()`, con la versión que hacía *deadlock*. ¿Por qué funciona?
+
+## Referencias
+
+- Diapositivas de la clase 18, parte 2, p. 35–46.
+- R. H. Arpaci-Dusseau y A. C. Arpaci-Dusseau, *Operating Systems: Three Easy Pieces*, v1.10, cap. 31: [*Semaphores*](https://pages.cs.wisc.edu/~remzi/OSTEP/threads-sema.pdf), §31.6, y cap. 32: [*Common Concurrency Problems*](https://pages.cs.wisc.edu/~remzi/OSTEP/threads-bugs.pdf).
+- A. B. Downey, *The Little Book of Semaphores*, cap. 4.4 (las funciones `left` y `right`).
+
+> [!IMPORTANT]
+> **Sobre esta guía.** La guía se elaboró con asistencia de un modelo de inteligencia artificial y se revisó contra las diapositivas de la clase y OSTEP. Las salidas son de una ejecución de referencia del 23/11/2026 en la máquina descrita en el [entorno de ejecución](../../../../clase_14/ejemplos/entorno_ejecucion.md) de la clase 14; en otra máquina la frecuencia del *deadlock* cambia. Si se encuentra alguna diferencia con lo visto en clase, prevalece lo explicado por el docente.
